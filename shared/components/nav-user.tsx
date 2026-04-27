@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheckIcon, BellIcon, ChevronsUpDownIcon, CreditCardIcon, LogOutIcon, SparklesIcon } from "lucide-react";
+import { BadgeCheckIcon, ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 
 import {
 	Avatar,
@@ -72,26 +72,10 @@ export function NavUser({
 								</div>
 							</DropdownMenuLabel>
 						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<SparklesIcon />
-								Upgrade to Pro
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem>
 								<BadgeCheckIcon />
 								Account
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<CreditCardIcon />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<BellIcon />
-								Notifications
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />

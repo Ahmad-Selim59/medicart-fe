@@ -1,14 +1,8 @@
-import { AlertsTrendChart } from "@/modules/dashboard/components/alerts-trend-chart";
 import { ClinicDistributionChart } from "@/modules/dashboard/components/clinic-distribution-chart";
-import { DeviceHealthChart } from "@/modules/dashboard/components/device-health-chart";
 import { PatientStatusDonut } from "@/modules/dashboard/components/patient-status-donut";
-import { ReadingsVolumeChart } from "@/modules/dashboard/components/readings-volume-chart";
 import { StatCards } from "@/modules/dashboard/components/stat-cards";
-import { VitalsTrendsChart } from "@/modules/dashboard/components/vitals-trends-chart";
 
-import { Download } from "lucide-react";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
-import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
@@ -37,10 +31,6 @@ export default async function DashboardPage() {
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Real-time monitoring across all clinics</p>
 				</div>
 				<ThemeToggle />
-				<Button size="sm" className="shrink-0">
-					<Download className="size-4" />
-					<span className="hidden sm:inline">Export Report</span>
-				</Button>
 			</header>
 			
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
@@ -54,19 +44,9 @@ export default async function DashboardPage() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<div className="lg:col-span-2">
-						<VitalsTrendsChart data={vitalsTrends} />
+						<ClinicDistributionChart data={clinicDistribution} />
 					</div>
 					<PatientStatusDonut data={patientStatus} />
-				</div>
-
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<ReadingsVolumeChart data={readingsVolume} />
-					<AlertsTrendChart data={alertsTrend} />
-				</div>
-
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<ClinicDistributionChart data={clinicDistribution} />
-					<DeviceHealthChart data={deviceHealth} />
 				</div>
 			</div>
 		</>
