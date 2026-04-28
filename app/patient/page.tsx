@@ -12,14 +12,42 @@ import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
+import { createClient } from "@/shared/lib/supabase/server";
+
 export const revalidate = 0;
 
 export default async function PatientListPage() {
-	const resPatients = await fetch("http://localhost:8081/api/patients");
-	const patientList: Patient[] = await resPatients.json();
+	const supabase = await createClient();
+	const { data: { user } } = await supabase.auth.getUser();
 
-	const resClinics = await fetch("http://localhost:8081/api/clinics");
-	const clinics: Clinic[] = await resClinics.json();
+	let allowedClinicsQuery = "";
+	let token = "";
+
+	if (user) {
+		const { data: sessionData } = await supabase.auth.getSession();
+		token = sessionData.session?.access_token || "";
+
+		const { data: memberships } = await supabase
+			.from("clinic_members")
+			.select("clinics(name)")
+			.eq("user_id", user.id);
+		if (memberships && memberships.length > 0) {
+			const names = memberships.map(m => (m.clinics as any).name);
+			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
+		}
+	}
+
+	const fetchOpts = {
+		headers: {
+			"Authorization": `Bearer ${token}`
+		}
+	};
+
+	const resPatients = await fetch(`http://localhost:8081/api/patients${allowedClinicsQuery}`, fetchOpts);
+	const patientList: Patient[] = resPatients.ok ? await resPatients.json() : [];
+
+	const resClinics = await fetch(`http://localhost:8081/api/clinics${allowedClinicsQuery}`, fetchOpts);
+	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
 
 	function getClinicName(clinicId: string) {
 		return clinics.find(c => c.id === clinicId)?.name ?? clinicId;

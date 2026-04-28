@@ -49,13 +49,16 @@ const data = {
 	],
 };
 
-const user = {
-	name: "shadcn",
-	email: "m@example.com",
-	avatar: "/avatars/shadcn.jpg",
-};
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+	user: {
+		name: string;
+		email: string;
+		avatar: string;
+		role: string;
+	};
+}
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>

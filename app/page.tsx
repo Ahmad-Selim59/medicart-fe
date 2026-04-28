@@ -6,11 +6,42 @@ import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
+import { createClient } from "@/shared/lib/supabase/server";
+
 export const revalidate = 0; // Disable static caching
 
 export default async function DashboardPage() {
-	const res = await fetch("http://localhost:8081/api/dashboard");
-	const data = await res.json();
+	const supabase = await createClient();
+	const { data: { user } } = await supabase.auth.getUser();
+
+	let allowedClinicsQuery = "";
+	let token = "";
+
+	if (user) {
+		const { data: sessionData } = await supabase.auth.getSession();
+		token = sessionData.session?.access_token || "";
+
+		const { data: memberships } = await supabase
+			.from("clinic_members")
+			.select("clinics(name)")
+			.eq("user_id", user.id);
+		if (memberships && memberships.length > 0) {
+			const names = memberships.map(m => (m.clinics as any).name);
+			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
+		}
+	}
+
+	const res = await fetch(`http://localhost:8081/api/dashboard${allowedClinicsQuery}`, {
+		headers: {
+			"Authorization": `Bearer ${token}`
+		}
+	});
+	
+	if (!res.ok) {
+		console.error("Failed to fetch dashboard data:", await res.text());
+	}
+	
+	const data = res.ok ? await res.json() : { quickStats: {} };
 	const {
 		quickStats,
 		patientStatus,
@@ -35,18 +66,23 @@ export default async function DashboardPage() {
 			
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
 				<StatCards
-					totalPatients={quickStats.totalPatients}
-					activeClinics={quickStats.activeClinics}
-					activeDevices={quickStats.activeDevices}
-					alertsCount={quickStats.alertsCount}
-					trends={quickStats.trends}
+					totalPatients={quickStats.totalPatients || 0}
+					activeClinics={quickStats.activeClinics || 0}
+					activeDevices={quickStats.activeDevices || 0}
+					alertsCount={quickStats.alertsCount || 0}
+					trends={quickStats.trends || {
+						totalPatients: [],
+						activeClinics: [],
+						activeDevices: [],
+						alertsCount: [],
+					}}
 				/>
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<div className="lg:col-span-2">
-						<ClinicDistributionChart data={clinicDistribution} />
+						<ClinicDistributionChart data={clinicDistribution || []} />
 					</div>
-					<PatientStatusDonut data={patientStatus} />
+					<PatientStatusDonut data={patientStatus || []} />
 				</div>
 			</div>
 		</>

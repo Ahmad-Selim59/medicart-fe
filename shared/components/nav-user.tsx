@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgeCheckIcon, ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
+import { logout } from "@/app/login/actions";
 
 import {
 	Avatar,
@@ -30,6 +31,7 @@ export function NavUser({
 		name: string;
 		email: string;
 		avatar: string;
+		role: string;
 	};
 }) {
 	const { isMobile } = useSidebar();
@@ -48,7 +50,7 @@ export function NavUser({
 						</Avatar>
 						<div className="grid flex-1 text-left text-sm leading-tight">
 							<span className="truncate font-medium">{user.name}</span>
-							<span className="truncate text-xs">{user.email}</span>
+							<span className="truncate text-xs text-muted-foreground capitalize">{user.role}</span>
 						</div>
 						<ChevronsUpDownIcon className="ml-auto size-4" />
 					</DropdownMenuTrigger>
@@ -67,7 +69,7 @@ export function NavUser({
 									</Avatar>
 									<div className="grid flex-1 text-left text-sm leading-tight">
 										<span className="truncate font-medium">{user.name}</span>
-										<span className="truncate text-xs">{user.email}</span>
+										<span className="truncate text-xs text-muted-foreground capitalize">{user.role}</span>
 									</div>
 								</div>
 							</DropdownMenuLabel>
@@ -79,7 +81,7 @@ export function NavUser({
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem>
+						<DropdownMenuItem onClick={() => logout()}>
 							<LogOutIcon />
 							Log out
 						</DropdownMenuItem>

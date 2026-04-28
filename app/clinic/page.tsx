@@ -13,11 +13,59 @@ import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
+import { AddClinicButton } from "./add-clinic-button";
+import { createClient } from "@/shared/lib/supabase/server";
+
 export const revalidate = 0;
 
 export default async function ClinicListPage() {
-	const res = await fetch("http://localhost:8081/api/clinics");
-	const clinicList: Clinic[] = await res.json();
+	// Fetch user's allowed clinics from Supabase
+	const supabase = await createClient();
+	const { data: { user } } = await supabase.auth.getUser();
+
+	let allowedClinicNames: string[] = [];
+	let isAdmin = false;
+	let token = "";
+
+	if (user) {
+		const { data: sessionData } = await supabase.auth.getSession();
+		token = sessionData.session?.access_token || "";
+
+		const { data: memberships } = await supabase
+			.from("clinic_members")
+			.select("clinics(name)")
+			.eq("user_id", user.id);
+		
+		if (memberships) {
+			allowedClinicNames = memberships.map(m => (m.clinics as any).name);
+		}
+
+		// Also fetch user profile to see if they are admin
+		const { data: profile } = await supabase
+			.from("profiles")
+			.select("role")
+			.eq("id", user.id)
+			.single();
+		
+		console.log("User Profile:", profile);
+		console.log("User Metadata Role:", user.user_metadata?.role);
+
+		if (profile?.role === "admin" || user.user_metadata?.role === "admin") {
+			isAdmin = true;
+		}
+	}
+
+	const res = await fetch("http://localhost:8081/api/clinics", {
+		headers: {
+			"Authorization": `Bearer ${token}`
+		}
+	});
+	let clinicList: Clinic[] = (await res.json()) || [];
+
+	// Filter clinics to only those the user is a member of
+	if (user) {
+		clinicList = clinicList.filter(c => allowedClinicNames.includes(c.name));
+	}
 
 	return (
 		<>
@@ -29,10 +77,7 @@ export default async function ClinicListPage() {
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Connected facilities</p>
 				</div>
 				<ThemeToggle />
-				<Button size="sm" className="shrink-0">
-					<Plus className="size-4" />
-					<span className="hidden sm:inline">Add Clinic</span>
-				</Button>
+				{isAdmin && <AddClinicButton />}
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">

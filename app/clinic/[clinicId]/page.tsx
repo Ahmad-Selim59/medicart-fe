@@ -12,6 +12,10 @@ import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
+import { createClient } from "@/shared/lib/supabase/server";
+
+import { InviteDoctorButton } from "../invite-doctor-button";
+
 export const revalidate = 0;
 
 export default async function ClinicDetailPage({
@@ -20,13 +24,61 @@ export default async function ClinicDetailPage({
 	params: Promise<{ clinicId: string }>;
 }) {
 	const { clinicId } = await params;
-	const resClinic = await fetch(`http://localhost:8081/api/clinic/${clinicId}`);
+	
+	const supabase = await createClient();
+	const { data: { user } } = await supabase.auth.getUser();
+
+	let allowedClinicsQuery = "";
+	let token = "";
+	let isClinicAdmin = false;
+
+	if (user) {
+		const { data: sessionData } = await supabase.auth.getSession();
+		token = sessionData.session?.access_token || "";
+
+		const { data: memberships } = await supabase
+			.from("clinic_members")
+			.select("role, clinics(name)")
+			.eq("user_id", user.id);
+		
+		if (memberships && memberships.length > 0) {
+			const names = memberships.map(m => (m.clinics as any).name);
+			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
+			
+			// Check if admin for THIS clinic
+			// We need to fetch the clinic name first to compare, or use ID if available
+			// Let's just check if they have ANY admin role in the memberships for now
+			// or better, fetch the membership for this specific clinic ID later.
+		}
+	}
+
+	const fetchOpts = {
+		headers: {
+			"Authorization": `Bearer ${token}`
+		}
+	};
+
+	const resClinic = await fetch(`http://localhost:8081/api/clinic/${clinicId}${allowedClinicsQuery}`, fetchOpts);
 	if (!resClinic.ok) {
 		return <div className="p-8 text-center">Clinic not found</div>;
 	}
 	const clinic: Clinic = await resClinic.json();
 
-	const resPatients = await fetch(`http://localhost:8081/api/clinic/${clinicId}/patients`);
+	// Verify if admin for this specific clinic
+	if (user) {
+		const { data: member } = await supabase
+			.from("clinic_members")
+			.select("role")
+			.eq("user_id", user.id)
+			.eq("clinic_id", clinic.id)
+			.single();
+		
+		if (member?.role === "admin") {
+			isClinicAdmin = true;
+		}
+	}
+
+	const resPatients = await fetch(`http://localhost:8081/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
 	const patients: Patient[] = resPatients.ok ? await resPatients.json() : [];
 
 	return (
@@ -39,7 +91,8 @@ export default async function ClinicDetailPage({
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Facility info and enrolled patients</p>
 				</div>
 				<ThemeToggle />
-				<Button size="sm" className="shrink-0">
+				{isClinicAdmin && <InviteDoctorButton clinicId={clinic.id} />}
+				<Button size="sm" variant="ghost" className="shrink-0">
 					<Download className="size-4" />
 					<span className="hidden sm:inline">Export</span>
 				</Button>
