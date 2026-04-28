@@ -115,7 +115,7 @@ export default async function ClinicDetailPage({
 
 		console.log(`[ClinicPage] Fetching patients...`);
 		const resPatients = await fetch(`${API_BASE}/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
-		patients = resPatients.ok ? await resPatients.json() : [];
+		patients = resPatients.ok ? ((await resPatients.json()) || []) : [];
 	} catch (err: any) {
 		console.error("Clinic Page Fetch Error:", err);
 		return (
