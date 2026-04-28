@@ -14,6 +14,7 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
 import { InviteDoctorButton } from "../invite-doctor-button";
+import { API_BASE } from "@/shared/api/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { RemoveDoctorButton } from "../remove-doctor-button";
 
@@ -55,7 +56,7 @@ export default async function ClinicDetailPage({
 		}
 	};
 
-	const resClinic = await fetch(`http://localhost:8081/api/clinic/${clinicId}${allowedClinicsQuery}`, fetchOpts);
+	const resClinic = await fetch(`${API_BASE}/api/clinic/${clinicId}${allowedClinicsQuery}`, fetchOpts);
 	if (!resClinic.ok) {
 		return <div className="p-8 text-center">Clinic not found</div>;
 	}
@@ -96,7 +97,7 @@ export default async function ClinicDetailPage({
 		}
 	}
 
-	const resPatients = await fetch(`http://localhost:8081/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
+	const resPatients = await fetch(`${API_BASE}/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
 	const patients: Patient[] = resPatients.ok ? await resPatients.json() : [];
 
 	return (

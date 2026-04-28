@@ -7,6 +7,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
+import { API_BASE } from "@/shared/api/client";
 
 export const revalidate = 0; // Disable static caching
 
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
 		}
 	}
 
-	const res = await fetch(`http://localhost:8081/api/dashboard${allowedClinicsQuery}`, {
+	const res = await fetch(`${API_BASE}/api/dashboard${allowedClinicsQuery}`, {
 		headers: {
 			"Authorization": `Bearer ${token}`
 		}

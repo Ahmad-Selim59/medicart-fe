@@ -10,6 +10,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
+import { API_BASE } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -46,13 +47,13 @@ export default async function PatientPage({
 		}
 	};
 
-	const resPatient = await fetch(`http://localhost:8081/api/patient/${patientId}${allowedClinicsQuery}`, fetchOpts);
+	const resPatient = await fetch(`${API_BASE}/api/patient/${patientId}${allowedClinicsQuery}`, fetchOpts);
 	if (!resPatient.ok) {
 		return <div className="p-8 text-center">Patient not found</div>;
 	}
 	const patient: Patient = await resPatient.json();
 
-	const resClinics = await fetch(`http://localhost:8081/api/clinics${allowedClinicsQuery}`, fetchOpts);
+	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
 	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
 
 	return (

@@ -13,6 +13,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
+import { API_BASE } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -43,10 +44,10 @@ export default async function PatientListPage() {
 		}
 	};
 
-	const resPatients = await fetch(`http://localhost:8081/api/patients${allowedClinicsQuery}`, fetchOpts);
+	const resPatients = await fetch(`${API_BASE}/api/patients${allowedClinicsQuery}`, fetchOpts);
 	const patientList: Patient[] = resPatients.ok ? await resPatients.json() : [];
 
-	const resClinics = await fetch(`http://localhost:8081/api/clinics${allowedClinicsQuery}`, fetchOpts);
+	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
 	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
 
 	function getClinicName(clinicId: string) {

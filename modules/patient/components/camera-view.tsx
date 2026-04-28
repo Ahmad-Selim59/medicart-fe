@@ -10,6 +10,7 @@ const REGEX_PATTERN = /\/$/;
 const HTTP_TO_WS_PATTERN = /^http/;
 
 import { Patient } from "@/shared/types/api";
+import { API_BASE } from "@/shared/api/client";
 
 export function CameraView({ patient }: { patient: Patient }) {
 	const [camSrc, setCamSrc] = useState("");
@@ -17,7 +18,6 @@ export function CameraView({ patient }: { patient: Patient }) {
 	const [ws, setWs] = useState<WebSocket | null>(null);
 	const [flip, setFlip] = useState(false);
 
-	const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8081";
 
 	const connectStream = useCallback(() => {
 		if (ws)

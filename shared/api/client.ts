@@ -36,4 +36,4 @@ async function apiRequest<T>(
 	return response.json();
 }
 
-export { ApiError, apiRequest };
+export { ApiError, apiRequest, API_BASE };

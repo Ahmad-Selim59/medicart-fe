@@ -15,6 +15,7 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { AddClinicButton } from "./add-clinic-button";
 import { createClient } from "@/shared/lib/supabase/server";
+import { API_BASE } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -55,7 +56,7 @@ export default async function ClinicListPage() {
 		}
 	}
 
-	const res = await fetch("http://localhost:8081/api/clinics", {
+	const res = await fetch(`${API_BASE}/api/clinics`, {
 		headers: {
 			"Authorization": `Bearer ${token}`
 		}
