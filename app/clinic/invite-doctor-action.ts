@@ -43,7 +43,7 @@ export async function inviteDoctor(clinicId: string, email: string) {
 		}]);
 
 	if (insertError) {
-		return { error: "Failed to add doctor to clinic." };
+		return { error: `Database Error: ${insertError.message} (${insertError.code})` };
 	}
 
 	revalidatePath(`/clinic/${clinicId}`);

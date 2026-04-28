@@ -13,8 +13,9 @@ import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
-
 import { InviteDoctorButton } from "../invite-doctor-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { RemoveDoctorButton } from "../remove-doctor-button";
 
 export const revalidate = 0;
 
@@ -31,6 +32,7 @@ export default async function ClinicDetailPage({
 	let allowedClinicsQuery = "";
 	let token = "";
 	let isClinicAdmin = false;
+	let realClinicId = "";
 
 	if (user) {
 		const { data: sessionData } = await supabase.auth.getSession();
@@ -44,11 +46,6 @@ export default async function ClinicDetailPage({
 		if (memberships && memberships.length > 0) {
 			const names = memberships.map(m => (m.clinics as any).name);
 			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
-			
-			// Check if admin for THIS clinic
-			// We need to fetch the clinic name first to compare, or use ID if available
-			// Let's just check if they have ANY admin role in the memberships for now
-			// or better, fetch the membership for this specific clinic ID later.
 		}
 	}
 
@@ -64,17 +61,38 @@ export default async function ClinicDetailPage({
 	}
 	const clinic: Clinic = await resClinic.json();
 
-	// Verify if admin for this specific clinic
+	// Fetch clinic members (doctors) and verify admin status
+	let doctors: any[] = [];
 	if (user) {
-		const { data: member } = await supabase
-			.from("clinic_members")
-			.select("role")
-			.eq("user_id", user.id)
-			.eq("clinic_id", clinic.id)
+		const { data: dbClinic } = await supabase
+			.from("clinics")
+			.select("id")
+			.eq("name", clinic.name)
 			.single();
 		
-		if (member?.role === "admin") {
-			isClinicAdmin = true;
+		if (dbClinic) {
+			realClinicId = dbClinic.id;
+			console.log("Fetching members for Clinic UUID:", realClinicId);
+			
+			// Get all doctors for this clinic
+			const { data: members, error } = await supabase
+				.from("clinic_members")
+				.select("user_id, role, profiles(full_name, email)")
+				.eq("clinic_id", dbClinic.id);
+			
+			if (error) console.error("Error fetching members:", error);
+			console.log("Raw Members found:", members);
+			
+			doctors = members || [];
+			
+			// Check if current user is admin
+			const myMember = doctors.find(m => m.user_id === user.id);
+			if (myMember?.role === "admin") {
+				isClinicAdmin = true;
+			}
+
+			// Filter doctors list to only show role='doctor'
+			doctors = doctors.filter(m => m.role === "doctor");
 		}
 	}
 
@@ -91,7 +109,6 @@ export default async function ClinicDetailPage({
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Facility info and enrolled patients</p>
 				</div>
 				<ThemeToggle />
-				{isClinicAdmin && <InviteDoctorButton clinicId={clinic.id} />}
 				<Button size="sm" variant="ghost" className="shrink-0">
 					<Download className="size-4" />
 					<span className="hidden sm:inline">Export</span>
@@ -103,52 +120,113 @@ export default async function ClinicDetailPage({
 					<ClinicDetails clinic={clinic} patients={patients} />
 
 					<div className="lg:col-span-2">
-						<Card>
-							<CardHeader>
-								<CardTitle>Enrolled Patients ({patients.length})</CardTitle>
-							</CardHeader>
-							<CardContent>
-								{patients.length === 0
-									? (
-											<p className="text-muted-foreground text-sm">No patients found for this clinic.</p>
-										)
-									: (
-											<Table>
-												<TableHeader>
-													<TableRow>
-														<TableHead>Name</TableHead>
-														<TableHead>Gender</TableHead>
-														<TableHead>Age</TableHead>
-														<TableHead>Status</TableHead>
-														<TableHead className="text-right">Action</TableHead>
-													</TableRow>
-												</TableHeader>
-												<TableBody>
-													{patients.map((patient) => {
-														return (
-															<TableRow key={patient.id}>
-																<TableCell className="font-medium">{patient.name}</TableCell>
-																<TableCell>{patient.gender}</TableCell>
-																<TableCell>{patient.age}</TableCell>
-																<TableCell>
-																	<StatusBadge status={patient.status} size="sm" />
-																</TableCell>
-																<TableCell className="text-right">
-																	<Link
-																		className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-																		href={`/patient/${patient.id}`}
-																	>
-																		<Eye className="size-4" />
-																	</Link>
-																</TableCell>
+						<Tabs defaultValue="patients">
+							<div className="flex items-center justify-between mb-4">
+								<TabsList>
+									<TabsTrigger value="patients">Patients</TabsTrigger>
+									<TabsTrigger value="staff">Staff & Doctors</TabsTrigger>
+								</TabsList>
+								{isClinicAdmin && realClinicId && (
+									<TabsContent value="staff" className="m-0">
+										<InviteDoctorButton clinicId={realClinicId} />
+									</TabsContent>
+								)}
+							</div>
+
+							<TabsContent value="patients" className="mt-0">
+								<Card>
+									<CardHeader>
+										<CardTitle>Enrolled Patients ({patients.length})</CardTitle>
+									</CardHeader>
+									<CardContent>
+										{patients.length === 0
+											? (
+													<p className="text-muted-foreground text-sm">No patients found for this clinic.</p>
+												)
+											: (
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Name</TableHead>
+																<TableHead>Gender</TableHead>
+																<TableHead>Age</TableHead>
+																<TableHead>Status</TableHead>
+																<TableHead className="text-right">Action</TableHead>
 															</TableRow>
-														);
-													})}
-												</TableBody>
-											</Table>
-										)}
-							</CardContent>
-						</Card>
+														</TableHeader>
+														<TableBody>
+															{patients.map((patient) => {
+																return (
+																	<TableRow key={patient.id}>
+																		<TableCell className="font-medium">{patient.name}</TableCell>
+																		<TableCell>{patient.gender}</TableCell>
+																		<TableCell>{patient.age}</TableCell>
+																		<TableCell>
+																			<StatusBadge status={patient.status} size="sm" />
+																		</TableCell>
+																		<TableCell className="text-right">
+																			<Link
+																				className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+																				href={`/patient/${patient.id}`}
+																			>
+																				<Eye className="size-4" />
+																			</Link>
+																		</TableCell>
+																	</TableRow>
+																);
+															})}
+														</TableBody>
+													</Table>
+												)}
+									</CardContent>
+								</Card>
+							</TabsContent>
+
+							<TabsContent value="staff" className="mt-0">
+								<Card>
+									<CardHeader>
+										<CardTitle>Clinical Staff ({doctors.length})</CardTitle>
+									</CardHeader>
+									<CardContent>
+										{doctors.length === 0
+											? (
+													<p className="text-muted-foreground text-sm">No doctors have been added to this clinic yet.</p>
+												)
+											: (
+													<Table>
+														<TableHeader>
+															<TableRow>
+																<TableHead>Name</TableHead>
+																<TableHead>Email</TableHead>
+																<TableHead className="text-right">Action</TableHead>
+															</TableRow>
+														</TableHeader>
+														<TableBody>
+															{doctors.map((doctor) => {
+																const profile = doctor.profiles as any;
+																return (
+																	<TableRow key={doctor.user_id}>
+																		<TableCell className="font-medium">{profile?.full_name || "Unknown Doctor"}</TableCell>
+																		<TableCell>{profile?.email || "No email"}</TableCell>
+																		<TableCell className="text-right">
+																			{isClinicAdmin && (
+																				<RemoveDoctorButton 
+																					clinicId={realClinicId} 
+																					userId={doctor.user_id} 
+																					doctorName={profile?.full_name || "this doctor"} 
+																				/>
+																			)}
+																		</TableCell>
+																	</TableRow>
+																);
+															})}
+														</TableBody>
+													</Table>
+												)}
+									</CardContent>
+								</Card>
+							</TabsContent>
+						</Tabs>
 					</div>
 				</div>
 			</div>
