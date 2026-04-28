@@ -33,8 +33,12 @@ export default async function PatientListPage() {
 			.select("clinics(name)")
 			.eq("user_id", user.id);
 		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any).name);
+			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
 			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
+		} else if (user) {
+			// If user is logged in but has 0 clinics, explicitly ask for 'none' 
+			// to prevent the backend from defaulting to 'show everything'
+			allowedClinicsQuery = "?clinics=__none__";
 		}
 	}
 
@@ -45,10 +49,10 @@ export default async function PatientListPage() {
 	};
 
 	const resPatients = await fetch(`${API_BASE}/api/patients${allowedClinicsQuery}`, fetchOpts);
-	const patientList: Patient[] = resPatients.ok ? await resPatients.json() : [];
+	const patientList: Patient[] = resPatients.ok ? ((await resPatients.json()) || []) : [];
 
 	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
-	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
+	const clinics: Clinic[] = resClinics.ok ? ((await resClinics.json()) || []) : [];
 
 	function getClinicName(clinicId: string) {
 		return clinics.find(c => c.id === clinicId)?.name ?? clinicId;

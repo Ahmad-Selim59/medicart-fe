@@ -27,8 +27,10 @@ export default async function DashboardPage() {
 			.select("clinics(name)")
 			.eq("user_id", user.id);
 		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any).name);
+			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
 			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
+		} else if (user) {
+			allowedClinicsQuery = "?clinics=__none__";
 		}
 	}
 
