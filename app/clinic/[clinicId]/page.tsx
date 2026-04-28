@@ -59,49 +59,31 @@ export default async function ClinicDetailPage({
 	let isClinicAdmin = false;
 	let realClinicId = "";
 
-	console.log(`[ClinicPage] Starting render for ID: ${clinicId}`);
-	
 	try {
-		console.log(`[ClinicPage] Fetching clinic from: ${API_BASE}`);
 		const resClinic = await fetch(`${API_BASE}/api/clinic/${clinicId}${allowedClinicsQuery}`, {
 			...fetchOpts,
 			cache: 'no-store'
 		});
 		
 		if (!resClinic.ok) {
-			const errorText = await resClinic.text().catch(() => "Unknown error");
-			console.error(`[ClinicPage] Backend returned ${resClinic.status}: ${errorText}`);
-			return <div className="p-8 text-center text-red-600">Backend Error: {resClinic.status} - {errorText}</div>;
+			return <div className="p-8 text-center text-muted-foreground">Clinic not found or access denied.</div>;
 		}
 		clinic = await resClinic.json();
-		console.log(`[ClinicPage] Clinic data loaded: ${clinic.name}`);
 
-		// Fetch clinic members (doctors) and verify admin status
 		if (user) {
-			console.log(`[ClinicPage] Checking Supabase for: ${clinic.name}`);
-			const { data: dbClinic, error: dbError } = await supabase
+			const { data: dbClinic } = await supabase
 				.from("clinics")
 				.select("id")
 				.eq("name", clinic.name)
 				.single();
 			
-			if (dbError) {
-				console.warn(`[ClinicPage] Supabase Clinic lookup failed: ${dbError.message}`);
-			}
-			
 			if (dbClinic) {
 				realClinicId = dbClinic.id;
-				console.log(`[ClinicPage] Found Clinic UUID: ${realClinicId}`);
-				
-				const { data: members, error: memberError } = await supabase
+				const { data: members } = await supabase
 					.from("clinic_members")
 					.select("user_id, role, profiles(full_name, email)")
 					.eq("clinic_id", dbClinic.id);
 				
-				if (memberError) {
-					console.error(`[ClinicPage] Membership fetch error: ${memberError.message}`);
-				}
-
 				if (members) {
 					doctors = members;
 					const myMember = doctors.find(m => m.user_id === user.id);
@@ -113,23 +95,10 @@ export default async function ClinicDetailPage({
 			}
 		}
 
-		console.log(`[ClinicPage] Fetching patients...`);
 		const resPatients = await fetch(`${API_BASE}/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
 		patients = resPatients.ok ? ((await resPatients.json()) || []) : [];
-	} catch (err: any) {
-		console.error("Clinic Page Fetch Error:", err);
-		return (
-			<div className="p-12 text-center space-y-4">
-				<h2 className="text-xl font-bold text-red-600">Connection Error</h2>
-				<p className="text-muted-foreground max-w-md mx-auto">
-					The frontend was unable to connect to the backend at <code className="bg-muted px-1 rounded">{API_BASE}</code>.
-				</p>
-				<p className="text-sm text-muted-foreground font-mono bg-muted p-3 rounded overflow-auto max-w-2xl mx-auto">
-					{err.message || "Unknown error"}
-				</p>
-				<Button onClick={() => window.location.reload()} variant="outline">Retry Connection</Button>
-			</div>
-		);
+	} catch (err) {
+		return <div className="p-8 text-center text-muted-foreground">Unable to load clinic details. Please try again later.</div>;
 	}
 
 	return (
