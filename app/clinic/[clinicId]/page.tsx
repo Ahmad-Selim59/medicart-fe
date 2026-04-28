@@ -42,7 +42,7 @@ export default async function ClinicDetailPage({
 			.eq("user_id", user.id);
 		
 		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any).name);
+			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
 			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
 		}
 	}
@@ -53,7 +53,7 @@ export default async function ClinicDetailPage({
 		}
 	};
 
-	let clinic: Clinic;
+	let clinic: Clinic = { id: "", name: clinicId, address: "", phone: "", email: "", website: "", status: "active", patientCount: 0, action: "" };
 	let patients: Patient[] = [];
 	let doctors: any[] = [];
 	let isClinicAdmin = false;
