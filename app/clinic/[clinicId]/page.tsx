@@ -15,8 +15,10 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { createClient } from "@/shared/lib/supabase/server";
 import { InviteDoctorButton } from "../invite-doctor-button";
 import { API_BASE } from "@/shared/api/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { TabsContent } from "@/shared/components/ui/tabs";
 import { RemoveDoctorButton } from "../remove-doctor-button";
+import { FacilityCameraView } from "@/modules/clinic/components/facility-camera-view";
+import { ClinicPageTabs } from "@/modules/clinic/components/clinic-page-tabs";
 
 export const revalidate = 0;
 
@@ -102,136 +104,137 @@ export default async function ClinicDetailPage({
 	}
 
 	return (
-		<>
-			<header className="sticky top-0 z-10 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-background/80 backdrop-blur border-b">
-				<SidebarTrigger className="-ml-1 shrink-0" />
-				<Separator orientation="vertical" className="h-9/10 shrink-0" />
-				<div className="flex-1 min-w-0">
-					<h1 className="text-sm sm:text-base font-semibold leading-tight truncate">{clinic.name}</h1>
-					<p className="hidden sm:block text-xs text-muted-foreground truncate">Facility info and enrolled patients</p>
-				</div>
-				<ThemeToggle />
-				<Button size="sm" variant="ghost" className="shrink-0">
-					<Download className="size-4" />
-					<span className="hidden sm:inline">Export</span>
-				</Button>
-			</header>
-
-			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					<ClinicDetails clinic={clinic} patients={patients} />
-
-					<div className="lg:col-span-2">
-						<Tabs defaultValue="patients">
-							<div className="flex items-center justify-between mb-4">
-								<TabsList>
-									<TabsTrigger value="patients">Patients</TabsTrigger>
-									<TabsTrigger value="staff">Staff & Doctors</TabsTrigger>
-								</TabsList>
-								{isClinicAdmin && realClinicId && (
-									<TabsContent value="staff" className="m-0">
-										<InviteDoctorButton clinicId={realClinicId} />
-									</TabsContent>
-								)}
-							</div>
-
-							<TabsContent value="patients" className="mt-0">
-								<Card>
-									<CardHeader>
-										<CardTitle>Enrolled Patients ({patients.length})</CardTitle>
-									</CardHeader>
-									<CardContent>
-										{patients.length === 0
-											? (
-													<p className="text-muted-foreground text-sm">No patients found for this clinic.</p>
-												)
-											: (
-													<Table>
-														<TableHeader>
-															<TableRow>
-																<TableHead>Name</TableHead>
-																<TableHead>Gender</TableHead>
-																<TableHead>Age</TableHead>
-																<TableHead>Status</TableHead>
-																<TableHead className="text-right">Action</TableHead>
-															</TableRow>
-														</TableHeader>
-														<TableBody>
-															{patients.map((patient) => {
-																return (
-																	<TableRow key={patient.id}>
-																		<TableCell className="font-medium">{patient.name}</TableCell>
-																		<TableCell>{patient.gender}</TableCell>
-																		<TableCell>{patient.age}</TableCell>
-																		<TableCell>
-																			<StatusBadge status={patient.status} size="sm" />
-																		</TableCell>
-																		<TableCell className="text-right">
-																			<Link
-																				className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-																				href={`/patient/${patient.id}`}
-																			>
-																				<Eye className="size-4" />
-																			</Link>
-																		</TableCell>
-																	</TableRow>
-																);
-															})}
-														</TableBody>
-													</Table>
-												)}
-									</CardContent>
-								</Card>
-							</TabsContent>
-
-							<TabsContent value="staff" className="mt-0">
-								<Card>
-									<CardHeader>
-										<CardTitle>Clinical Staff ({doctors.length})</CardTitle>
-									</CardHeader>
-									<CardContent>
-										{doctors.length === 0
-											? (
-													<p className="text-muted-foreground text-sm">No doctors have been added to this clinic yet.</p>
-												)
-											: (
-													<Table>
-														<TableHeader>
-															<TableRow>
-																<TableHead>Name</TableHead>
-																<TableHead>Email</TableHead>
-																<TableHead className="text-right">Action</TableHead>
-															</TableRow>
-														</TableHeader>
-														<TableBody>
-															{doctors.map((doctor) => {
-																const profile = doctor.profiles as any;
-																return (
-																	<TableRow key={doctor.user_id}>
-																		<TableCell className="font-medium">{profile?.full_name || "Unknown Doctor"}</TableCell>
-																		<TableCell>{profile?.email || "No email"}</TableCell>
-																		<TableCell className="text-right">
-																			{isClinicAdmin && (
-																				<RemoveDoctorButton 
-																					clinicId={realClinicId} 
-																					userId={doctor.user_id} 
-																					doctorName={profile?.full_name || "this doctor"} 
-																				/>
-																			)}
-																		</TableCell>
-																	</TableRow>
-																);
-															})}
-														</TableBody>
-													</Table>
-												)}
-									</CardContent>
-								</Card>
-							</TabsContent>
-						</Tabs>
+		<ClinicPageTabs
+			leftHeader={(
+				<>
+					<SidebarTrigger className="-ml-2" />
+					<Separator orientation="vertical" className="h-6" />
+					<div className="flex flex-col">
+						<h1 className="text-sm font-bold leading-none truncate">{clinic.name}</h1>
+						<span className="text-[9px] text-muted-foreground uppercase tracking-widest font-extrabold mt-1">Facility Hub</span>
 					</div>
-				</div>
-			</div>
-		</>
+				</>
+			)}
+			rightHeader={(
+				<>
+					<ThemeToggle />
+					<Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />
+					<Button size="sm" variant="outline" className="hidden sm:flex h-8 text-xs border-dashed">
+						<Download className="size-3.5 mr-2" />
+						Export Data
+					</Button>
+				</>
+			)}
+		>
+			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
+				<TabsContent value="camera" className="mt-0">
+					<FacilityCameraView clinicName={clinic.name} />
+				</TabsContent>
+
+				<TabsContent value="patients" className="mt-0">
+					<div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+						<div className="xl:col-span-1">
+							<ClinicDetails clinic={clinic} patients={patients} />
+						</div>
+						<div className="xl:col-span-3">
+							<Card>
+								<CardHeader>
+									<CardTitle>Enrolled Patients ({patients.length})</CardTitle>
+								</CardHeader>
+								<CardContent>
+									{patients.length === 0
+										? (
+												<p className="text-muted-foreground text-sm">No patients found for this clinic.</p>
+											)
+										: (
+												<Table>
+													<TableHeader>
+														<TableRow>
+															<TableHead>Name</TableHead>
+															<TableHead>Gender</TableHead>
+															<TableHead>Age</TableHead>
+															<TableHead>Status</TableHead>
+															<TableHead className="text-right">Action</TableHead>
+														</TableRow>
+													</TableHeader>
+													<TableBody>
+														{patients.map((patient) => {
+															return (
+																<TableRow key={patient.id}>
+																	<TableCell className="font-medium">{patient.name}</TableCell>
+																	<TableCell>{patient.gender}</TableCell>
+																	<TableCell>{patient.age}</TableCell>
+																	<TableCell>
+																		<StatusBadge status={patient.status} size="sm" />
+																	</TableCell>
+																	<TableCell className="text-right">
+																		<Link
+																			className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+																			href={`/patient/${patient.id}`}
+																		>
+																			<Eye className="size-4" />
+																		</Link>
+																	</TableCell>
+																</TableRow>
+															);
+														})}
+													</TableBody>
+												</Table>
+											)}
+								</CardContent>
+							</Card>
+						</div>
+					</div>
+				</TabsContent>
+
+				<TabsContent value="staff" className="mt-0">
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<CardTitle>Clinical Staff ({doctors.length})</CardTitle>
+							{isClinicAdmin && realClinicId && (
+								<InviteDoctorButton clinicId={realClinicId} />
+							)}
+						</CardHeader>
+						<CardContent>
+							{doctors.length === 0
+								? (
+										<p className="text-muted-foreground text-sm">No doctors have been added to this clinic yet.</p>
+									)
+								: (
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>Name</TableHead>
+													<TableHead>Email</TableHead>
+													<TableHead className="text-right">Action</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{doctors.map((doctor) => {
+													const profile = doctor.profiles as any;
+													return (
+														<TableRow key={doctor.user_id}>
+															<TableCell className="font-medium">{profile?.full_name || "Unknown Doctor"}</TableCell>
+															<TableCell>{profile?.email || "No email"}</TableCell>
+															<TableCell className="text-right">
+																{isClinicAdmin && (
+																	<RemoveDoctorButton 
+																		clinicId={realClinicId} 
+																		userId={doctor.user_id} 
+																		doctorName={profile?.full_name || "this doctor"} 
+																	/>
+																)}
+															</TableCell>
+														</TableRow>
+													);
+												})}
+											</TableBody>
+										</Table>
+									)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</main>
+		</ClinicPageTabs>
 	);
 }
