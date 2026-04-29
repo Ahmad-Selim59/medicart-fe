@@ -64,7 +64,7 @@ export async function forgotPassword(formData: FormData) {
 	// Recovery links use PKCE: Supabase appends ?code=... which must hit a route handler
 	// that calls exchangeCodeForSession (see app/auth/callback/route.ts) so session
 	// cookies exist before /reset-password runs updateUser.
-	const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+	const siteUrl = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000").replace(/\/$/, "");
 	const { error } = await supabase.auth.resetPasswordForEmail(email, {
 		redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
 	});
