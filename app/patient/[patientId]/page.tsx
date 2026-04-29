@@ -1,5 +1,6 @@
 import { PatientData } from "@/modules/patient/components/patient-data";
 import { CameraView } from "@/modules/patient/components/camera-view";
+import { AudioCommunication } from "@/modules/patient/components/audio-communication";
 import SensorData from "@/modules/patient/components/sensor-data";
 import { Patient, Clinic } from "@/shared/types/api";
 
@@ -78,6 +79,7 @@ export default async function PatientPage({
 				<PatientData patient={patient} clinics={clinics} />
 				<SensorData patient={patient} />
 				<CameraView patient={patient} />
+				<AudioCommunication patient={patient} />
 			</div>
 		</>
 	);

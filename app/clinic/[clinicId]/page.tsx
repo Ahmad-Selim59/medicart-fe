@@ -18,6 +18,7 @@ import { API_BASE } from "@/shared/api/client";
 import { TabsContent } from "@/shared/components/ui/tabs";
 import { RemoveDoctorButton } from "../remove-doctor-button";
 import { FacilityCameraView } from "@/modules/clinic/components/facility-camera-view";
+import { FacilityAudioView } from "@/modules/clinic/components/facility-audio-view";
 import { ClinicPageTabs } from "@/modules/clinic/components/clinic-page-tabs";
 
 export const revalidate = 0;
@@ -129,6 +130,10 @@ export default async function ClinicDetailPage({
 			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
 				<TabsContent value="camera" className="mt-0">
 					<FacilityCameraView clinicName={clinic.name} />
+				</TabsContent>
+
+				<TabsContent value="audio" className="mt-0">
+					<FacilityAudioView clinicName={clinic.name} />
 				</TabsContent>
 
 				<TabsContent value="patients" className="mt-0">

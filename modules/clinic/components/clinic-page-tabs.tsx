@@ -23,12 +23,18 @@ export function ClinicPageTabs({ children, leftHeader, rightHeader }: ClinicPage
 					<TabsList className="bg-muted/50 border h-9">
 						<TabsTrigger value="patients" className="text-xs px-4">Patients</TabsTrigger>
 						<TabsTrigger value="staff" className="text-xs px-4">Staff</TabsTrigger>
-						<TabsTrigger
-							value="camera"
-							className="text-xs px-4 text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
-						>
-							Live Feed
-						</TabsTrigger>
+					<TabsTrigger
+						value="camera"
+						className="text-xs px-4 text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+					>
+						Live Feed
+					</TabsTrigger>
+					<TabsTrigger
+						value="audio"
+						className="text-xs px-4 text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+					>
+						Audio
+					</TabsTrigger>
 					</TabsList>
 				</div>
 
