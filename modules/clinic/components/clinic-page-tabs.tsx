@@ -29,12 +29,6 @@ export function ClinicPageTabs({ children, leftHeader, rightHeader }: ClinicPage
 					>
 						Live Feed
 					</TabsTrigger>
-					<TabsTrigger
-						value="audio"
-						className="text-xs px-4 text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-					>
-						Audio
-					</TabsTrigger>
 					</TabsList>
 				</div>
 

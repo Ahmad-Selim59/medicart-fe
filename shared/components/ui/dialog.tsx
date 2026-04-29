@@ -53,8 +53,8 @@ const DialogDescription = ({ children }: { children: React.ReactNode }) => (
 	<p className="text-sm text-muted-foreground">{children}</p>
 );
 
-const DialogFooter = ({ children }: { children: React.ReactNode }) => (
-	<div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6">{children}</div>
+const DialogFooter = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+	<div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6", className)}>{children}</div>
 );
 
 export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter };

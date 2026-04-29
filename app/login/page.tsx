@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
 import { login, signup } from "./actions";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
-import { HospitalIcon } from "lucide-react";
+import { HospitalIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 
@@ -15,6 +15,7 @@ export default function LoginPage() {
 	const [role, setRole] = useState("doctor");
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	async function handleSubmit(formData: FormData) {
 		setLoading(true);
@@ -99,8 +100,37 @@ export default function LoginPage() {
 								<label htmlFor="password" className="text-sm font-medium leading-none">
 									Password
 								</label>
+								{isLogin && (
+									<Link
+										href="/forgot-password"
+										className="text-xs text-muted-foreground hover:text-primary transition-colors"
+									>
+										Forgot password?
+									</Link>
+								)}
 							</div>
-							<Input id="password" name="password" type="password" required minLength={6} />
+							<div className="relative">
+								<Input
+									id="password"
+									name="password"
+									type={showPassword ? "text" : "password"}
+									required
+									minLength={6}
+									className="pr-10"
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+									aria-label={showPassword ? "Hide password" : "Show password"}
+								>
+									{showPassword ? (
+										<EyeOffIcon className="size-4" />
+									) : (
+										<EyeIcon className="size-4" />
+									)}
+								</button>
+							</div>
 						</div>
 
 						{error && (
@@ -127,6 +157,7 @@ export default function LoginPage() {
 							onClick={() => {
 								setIsLogin(!isLogin);
 								setError(null);
+								setShowPassword(false);
 							}}
 							className="text-primary hover:underline font-medium"
 						>
