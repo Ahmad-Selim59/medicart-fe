@@ -4,6 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/shared/lib/supabase/server";
 
+/**
+ * Public origin of this Next.js app (Vercel / local dev). Password reset & OAuth redirects
+ * must land on this origin — not NEXT_PUBLIC_* API base, which points at the backend.
+ */
+function publicAppOrigin(): string {
+	const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+	if (explicit) return explicit.replace(/\/$/, "");
+
+	// Preview & production deployments: https://vercel.com/docs/projects/environment-variables/system-environment-variables
+	const vercel = process.env.VERCEL_URL?.trim();
+	if (vercel) {
+		const host = vercel.replace(/^https?:\/\//, "").replace(/\/$/, "");
+		return `https://${host}`;
+	}
+
+	return "http://localhost:3000";
+}
+
 export async function login(formData: FormData) {
 	const supabase = await createClient();
 
@@ -61,12 +79,10 @@ export async function forgotPassword(formData: FormData) {
 	const supabase = await createClient();
 	const email = (formData.get("email") as string)?.trim();
 
-	// Recovery links use PKCE: Supabase appends ?code=... which must hit a route handler
-	// that calls exchangeCodeForSession (see app/auth/callback/route.ts) so session
-	// cookies exist before /reset-password runs updateUser.
-	const siteUrl = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000").replace(/\/$/, "");
+	// Recovery links use PKCE: Supabase appends ?code=... — must hit /auth/callback first
+	// so exchangeCodeForSession sets cookies before /reset-password.
 	const { error } = await supabase.auth.resetPasswordForEmail(email, {
-		redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
+		redirectTo: `${publicAppOrigin()}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
 	});
 
 	if (error) {
