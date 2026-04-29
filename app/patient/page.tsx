@@ -3,12 +3,11 @@ import { buttonVariants } from "@/shared/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { cn } from "@/shared/lib/utils";
-import { Eye, Plus } from "lucide-react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Patient, Clinic } from "@/shared/types/api";
 
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
-import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
@@ -68,10 +67,6 @@ export default async function PatientListPage() {
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">All enrolled patients across clinics</p>
 				</div>
 				<ThemeToggle />
-				<Button size="sm" className="shrink-0">
-					<Plus className="size-4" />
-					<span className="hidden sm:inline">Add Patient</span>
-				</Button>
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">

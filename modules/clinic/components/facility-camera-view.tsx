@@ -206,7 +206,7 @@ export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
 						</div>
 						<div>
 							<p className="text-base font-bold text-white tracking-tight">Facility Live Stream</p>
-							<p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">{clinicName} • Secure Link</p>
+							<p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">{clinicName}</p>
 						</div>
 					</div>
 					<div className="flex items-center gap-3">
@@ -244,15 +244,6 @@ export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
 
 						{isConnected && (
 							<>
-								<div className="absolute top-6 left-6 flex items-center gap-3 px-4 py-2 rounded-lg bg-black/60 backdrop-blur-xl border border-white/10">
-									<div className="flex items-center gap-2">
-										<div className="size-2 rounded-full bg-red-500 animate-pulse" />
-										<span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Live REC</span>
-									</div>
-									<div className="w-px h-3 bg-white/20" />
-									<span className="text-[10px] font-mono text-zinc-400 tracking-tighter">00:04:12:09</span>
-								</div>
-
 								{/* Mic indicator overlay */}
 								{!micMuted && (
 									<div className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-xl border border-red-500/30">
@@ -316,35 +307,37 @@ export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
 
 				{/* D-Pad */}
 				<Card className="md:col-span-1">
-					<CardHeader className="pb-3 flex flex-row items-center justify-between">
+					<CardHeader className="pb-3">
 						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Precision PTZ</p>
+					</CardHeader>
+					<CardContent className="flex flex-col items-center gap-3">
 						<Button
-							variant="ghost"
-							size="icon"
-							className="size-6 text-muted-foreground hover:text-primary"
+							type="button"
+							variant="outline"
+							size="sm"
+							className="w-full shrink-0 gap-2"
 							onClick={() => sendCameraControl("reset")}
 						>
-							<RotateCcw className="size-3" />
+							<RotateCcw className="size-4 shrink-0" aria-hidden />
+							Reset camera position
 						</Button>
-					</CardHeader>
-					<CardContent className="flex justify-center">
 						<div className="grid grid-cols-3 gap-2 bg-zinc-900 p-3 rounded-2xl border border-white/5">
 							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 shadow-xl" onClick={() => sendCameraControl("move-up")}>
+							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-up")}>
 								<ChevronUp className="size-6" />
 							</Button>
 							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 shadow-xl" onClick={() => sendCameraControl("move-left")}>
+							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-left")}>
 								<ChevronLeft className="size-6" />
 							</Button>
 							<div className="size-12 flex items-center justify-center">
 								<div className="size-1.5 rounded-full bg-primary animate-pulse" />
 							</div>
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 shadow-xl" onClick={() => sendCameraControl("move-right")}>
+							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-right")}>
 								<ChevronRight className="size-6" />
 							</Button>
 							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 shadow-xl" onClick={() => sendCameraControl("move-down")}>
+							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-down")}>
 								<ChevronDown className="size-6" />
 							</Button>
 							<div />
@@ -352,29 +345,21 @@ export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
 					</CardContent>
 				</Card>
 
-				{/* Signal / Utility */}
+				{/* View */}
 				<Card className="bg-muted/30 border-dashed">
 					<CardHeader className="pb-3">
-						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Signal Processing</p>
+						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">View</p>
 					</CardHeader>
-					<CardContent className="space-y-3">
+					<CardContent>
 						<Button
+							type="button"
 							variant="secondary"
 							onClick={() => setFlip(f => !f)}
-							className="w-full bg-zinc-800/50 hover:bg-zinc-800 text-xs font-bold"
+							className="w-full bg-zinc-800/50 hover:bg-zinc-800 text-zinc-50 hover:text-white text-xs font-bold"
 						>
 							<FlipVertical className="size-4 mr-2" />
-							Mirror Vertical Axis
+							Flip view vertically
 						</Button>
-						<div className="p-4 rounded-xl bg-zinc-900/50 border border-white/5 space-y-2">
-							<div className="flex justify-between text-[9px] font-bold text-zinc-500 uppercase">
-								<span>Bitrate</span>
-								<span className="text-emerald-500">4.2 Mbps</span>
-							</div>
-							<div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-								<div className="w-[70%] h-full bg-emerald-500" />
-							</div>
-						</div>
 					</CardContent>
 				</Card>
 			</div>

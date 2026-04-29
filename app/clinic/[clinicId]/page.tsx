@@ -5,10 +5,9 @@ import { StatusBadge } from "@/shared/components/custom/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { cn } from "@/shared/lib/utils";
-import { Download, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
-import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
@@ -115,16 +114,7 @@ export default async function ClinicDetailPage({
 					</div>
 				</>
 			)}
-			rightHeader={(
-				<>
-					<ThemeToggle />
-					<Separator orientation="vertical" className="h-6 mx-1 hidden sm:block" />
-					<Button size="sm" variant="outline" className="hidden sm:flex h-8 text-xs border-dashed">
-						<Download className="size-3.5 mr-2" />
-						Export Data
-					</Button>
-				</>
-			)}
+			rightHeader={<ThemeToggle />}
 		>
 			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
 				<TabsContent value="camera" className="mt-0">

@@ -4,9 +4,7 @@ import { AudioCommunication } from "@/modules/patient/components/audio-communica
 import SensorData from "@/modules/patient/components/sensor-data";
 import { Patient, Clinic } from "@/shared/types/api";
 
-import { Download } from "lucide-react";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
-import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
@@ -69,10 +67,6 @@ export default async function PatientPage({
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Vitals, history, and live monitoring</p>
 				</div>
 				<ThemeToggle />
-				<Button size="sm" className="shrink-0">
-					<Download className="size-4" />
-					<span className="hidden sm:inline">Export</span>
-				</Button>
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
