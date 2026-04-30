@@ -4,18 +4,45 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/shared/lib/supabase/server";
 
+function normalizeAppOrigin(raw: string): string {
+	return raw.trim().replace(/\/$/, "");
+}
+
+/** True if this looks like a dev machine origin (often baked into builds by mistake). */
+function originHostIsLocal(origin: string): boolean {
+	try {
+		const withScheme = origin.includes("://") ? origin : `https://${origin}`;
+		const host = new URL(withScheme).hostname.toLowerCase();
+		return host === "localhost" || host === "127.0.0.1" || host === "::1";
+	} catch {
+		return false;
+	}
+}
+
 /**
- * Public origin of this Next.js app (Vercel / local dev). Password reset & OAuth redirects
- * must land on this origin — not NEXT_PUBLIC_* API base, which points at the backend.
+ * Public origin of this Next.js app for auth email links (not your API base).
+ *
+ * - Prefer `SITE_URL` (server-only, read at runtime on Vercel — set to `https://your-domain.com`).
+ * - `NEXT_PUBLIC_SITE_URL` is inlined at **build time**; a local build or missing env at build can
+ *   bake in `localhost` forever until you redeploy. On Vercel we detect that and fall back to
+ *   `VERCEL_URL` (always set at runtime for the current deployment).
  */
 function publicAppOrigin(): string {
-	const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-	if (explicit) return explicit.replace(/\/$/, "");
+	const siteUrl = process.env.SITE_URL?.trim();
+	if (siteUrl) return normalizeAppOrigin(siteUrl);
 
-	// Preview & production deployments: https://vercel.com/docs/projects/environment-variables/system-environment-variables
-	const vercel = process.env.VERCEL_URL?.trim();
-	if (vercel) {
-		const host = vercel.replace(/^https?:\/\//, "").replace(/\/$/, "");
+	const nextPublic = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+	const vercelHost = process.env.VERCEL_URL?.trim();
+
+	if (vercelHost && (!nextPublic || originHostIsLocal(nextPublic))) {
+		const host = vercelHost.replace(/^https?:\/\//, "").replace(/\/$/, "");
+		return `https://${host}`;
+	}
+
+	if (nextPublic) return normalizeAppOrigin(nextPublic);
+
+	if (vercelHost) {
+		const host = vercelHost.replace(/^https?:\/\//, "").replace(/\/$/, "");
 		return `https://${host}`;
 	}
 
