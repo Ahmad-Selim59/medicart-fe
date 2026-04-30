@@ -4,48 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/shared/lib/supabase/server";
 
-function normalizeAppOrigin(raw: string): string {
-	return raw.trim().replace(/\/$/, "");
-}
-
-/** True if this looks like a dev machine origin (often baked into builds by mistake). */
-function originHostIsLocal(origin: string): boolean {
-	try {
-		const withScheme = origin.includes("://") ? origin : `https://${origin}`;
-		const host = new URL(withScheme).hostname.toLowerCase();
-		return host === "localhost" || host === "127.0.0.1" || host === "::1";
-	} catch {
-		return false;
-	}
-}
-
-/**
- * Public origin of this Next.js app for auth email links (not your API base).
- *
- * - Prefer `SITE_URL` (server-only, read at runtime on Vercel — set to `https://your-domain.com`).
- * - `NEXT_PUBLIC_SITE_URL` is inlined at **build time**; a local build or missing env at build can
- *   bake in `localhost` forever until you redeploy. On Vercel we detect that and fall back to
- *   `VERCEL_URL` (always set at runtime for the current deployment).
- */
+/** App origin for auth email links—must be the Next host, not NEXT_PUBLIC_API_BASE. */
 function publicAppOrigin(): string {
-	const siteUrl = process.env.SITE_URL?.trim();
-	if (siteUrl) return normalizeAppOrigin(siteUrl);
-
-	const nextPublic = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-	const vercelHost = process.env.VERCEL_URL?.trim();
-
-	if (vercelHost && (!nextPublic || originHostIsLocal(nextPublic))) {
-		const host = vercelHost.replace(/^https?:\/\//, "").replace(/\/$/, "");
+	const trim = (s: string) => s.trim().replace(/\/$/, "");
+	const site = process.env.SITE_URL?.trim();
+	if (site) return trim(site);
+	const next = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+	if (next) return trim(next);
+	const vercel = process.env.VERCEL_URL?.trim();
+	if (vercel) {
+		const host = vercel.replace(/^https?:\/\//, "").replace(/\/$/, "");
 		return `https://${host}`;
 	}
-
-	if (nextPublic) return normalizeAppOrigin(nextPublic);
-
-	if (vercelHost) {
-		const host = vercelHost.replace(/^https?:\/\//, "").replace(/\/$/, "");
-		return `https://${host}`;
-	}
-
 	return "http://localhost:3000";
 }
 
