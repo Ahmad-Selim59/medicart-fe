@@ -1,11 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FlipVertical, Mic, MicOff, RotateCcw, Video, VideoOff, Volume2 } from "lucide-react";
+import {
+	ChevronDown,
+	ChevronLeft,
+	ChevronRight,
+	ChevronUp,
+	FlipVertical,
+	Mic,
+	MicOff,
+	RotateCcw,
+	Video,
+	VideoOff,
+	Volume2,
+} from "lucide-react";
 import { StatusBadge } from "@/shared/components/custom/status-badge";
 import { ClinicChat } from "@/shared/components/custom/clinic-chat";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { API_BASE } from "@/shared/api/client";
 
 const REGEX_PATTERN = /\/$/;
@@ -17,16 +31,48 @@ interface FacilityCameraViewProps {
 	senderName?: string;
 }
 
+function StreamIconButton({
+	label,
+	onClick,
+	disabled,
+	active,
+	children,
+}: {
+	label: string;
+	onClick: () => void;
+	disabled?: boolean;
+	active?: boolean;
+	children: React.ReactNode;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				render={(
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon"
+						className={`size-8 text-zinc-300 hover:text-white hover:bg-white/10 ${active ? "bg-white/15 text-white" : ""}`}
+						onClick={onClick}
+						disabled={disabled}
+						aria-label={label}
+					>
+						{children}
+					</Button>
+				)}
+			/>
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
+	);
+}
+
 export function FacilityCameraView({ clinicName, senderName }: FacilityCameraViewProps) {
-	// ── Camera state ────────────────────────────────────────────────────────
 	const [camSrc, setCamSrc] = useState("");
 	const [camStatus, setCamStatus] = useState<"disconnected" | "connected" | "streaming" | "error">("disconnected");
 	const [ws, setWs] = useState<WebSocket | null>(null);
 	const [flip, setFlip] = useState(false);
-
-	// ── Audio state ─────────────────────────────────────────────────────────
-	const [micMuted, setMicMuted] = useState(true); // doctor starts muted
-	const [patientAudio, setPatientAudio] = useState(false); // true when receiving patient audio
+	const [micMuted, setMicMuted] = useState(true);
+	const [patientAudio, setPatientAudio] = useState(false);
 
 	const audioWsRef = useRef<WebSocket | null>(null);
 	const audioCtxRef = useRef<AudioContext | null>(null);
@@ -34,7 +80,6 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 	const micStreamRef = useRef<MediaStream | null>(null);
 	const micProcessorRef = useRef<ScriptProcessorNode | null>(null);
 
-	// Clean up on unmount
 	useEffect(() => {
 		return () => {
 			stopDoctorMic(false);
@@ -43,8 +88,6 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-
-	// ── Audio helpers ────────────────────────────────────────────────────────
 
 	function getAudioCtx(): AudioContext {
 		if (!audioCtxRef.current) {
@@ -81,7 +124,7 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 			nextPlayRef.current = 0;
 			setPatientAudio(false);
 		};
-		sock.onerror = () => { setPatientAudio(false); };
+		sock.onerror = () => setPatientAudio(false);
 		sock.onmessage = (ev) => {
 			if (ev.data instanceof ArrayBuffer && ev.data.byteLength > 0) {
 				playPCMChunk(ev.data);
@@ -99,8 +142,6 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		setPatientAudio(false);
 		setMicMuted(true);
 	}
-
-	// ── Doctor mic ────────────────────────────────────────────────────────────
 
 	async function sendMicControl(command: "mic-on" | "mic-off") {
 		const base = (API_BASE || "").replace(REGEX_PATTERN, "");
@@ -150,8 +191,6 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		muteMic(sendOff);
 	}
 
-	// ── Camera ────────────────────────────────────────────────────────────────
-
 	const connectStream = useCallback(() => {
 		if (ws) return;
 		const base = (API_BASE || "").replace(REGEX_PATTERN, "");
@@ -162,7 +201,7 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		sock.onopen = () => {
 			setCamStatus("connected");
 			setWs(sock);
-			connectAudio(); // auto-join audio channel when stream starts
+			connectAudio();
 		};
 		sock.onclose = () => {
 			setCamStatus("disconnected");
@@ -182,7 +221,7 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 	const disconnectStream = useCallback(() => {
 		ws?.close();
 		setWs(null);
-		disconnectAudio(); // also leave audio channel
+		disconnectAudio();
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ws]);
 
@@ -198,179 +237,136 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 	const isConnected = camStatus === "connected" || camStatus === "streaming";
 
 	return (
-		<div className="space-y-6">
-			{/* Main monitor */}
-			<Card className="overflow-hidden border-none shadow-2xl bg-zinc-950">
-				<CardHeader className="flex flex-row items-center justify-between px-6 py-4 border-b border-white/5 bg-zinc-900/50">
-					<div className="flex items-center gap-3">
-						<div className="p-2 rounded-lg bg-emerald-500/10">
-							<Video className="size-5 text-emerald-500" />
-						</div>
-						<div>
-							<p className="text-base font-bold text-white tracking-tight">Facility Live Stream</p>
-							<p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">{clinicName}</p>
-						</div>
-					</div>
-					<div className="flex items-center gap-3">
-						{/* Patient audio indicator */}
-						{isConnected && patientAudio && (
-							<div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-								<Volume2 className="size-3 text-emerald-400" />
-								<span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Patient Mic</span>
-							</div>
-						)}
-						<StatusBadge status={isConnected ? "online" : "offline"} />
-					</div>
-				</CardHeader>
+		<TooltipProvider>
+			<Tabs defaultValue="stream" className="space-y-4">
+				<TabsList className="bg-muted/50">
+					<TabsTrigger value="stream">Live Stream</TabsTrigger>
+					<TabsTrigger value="controls">Camera Control</TabsTrigger>
+				</TabsList>
 
-				<CardContent className="p-0">
-					<div className="relative w-full bg-black aspect-video flex items-center justify-center overflow-hidden">
-						{camSrc ? (
-							<img
-								src={camSrc}
-								alt="Facility Live Feed"
-								className={`w-full h-full object-contain transition-transform duration-500 ${flip ? "scale-y-[-1]" : ""}`}
-							/>
-						) : (
-							<div className="flex flex-col items-center gap-6 text-zinc-700">
-								<div className="relative">
-									<VideoOff className="size-16 animate-pulse" />
-									<div className="absolute inset-0 blur-2xl bg-emerald-500/10 scale-150" />
-								</div>
-								<div className="text-center space-y-1">
-									<p className="text-lg font-semibold text-zinc-400">Signal Lost</p>
-									<p className="text-xs text-zinc-600 font-medium">Awaiting handshake from {clinicName} Desktop App</p>
-								</div>
+				<TabsContent value="stream" className="mt-0 space-y-0">
+					<Card className="overflow-hidden border-none shadow-2xl bg-zinc-950 rounded-b-none">
+						<CardHeader className="flex flex-row items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-zinc-900/50">
+							<div className="min-w-0">
+								<p className="text-sm font-bold text-white tracking-tight truncate">Facility Live Stream</p>
+								<p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest truncate">{clinicName}</p>
 							</div>
-						)}
-
-						{isConnected && (
-							<>
-								{/* Mic indicator overlay */}
-								{!micMuted && (
-									<div className="absolute top-6 right-6 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-xl border border-red-500/30">
-										<div className="size-2 rounded-full bg-red-500 animate-pulse" />
-										<span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Doctor Mic Live</span>
+							<div className="flex items-center gap-1.5 shrink-0">
+								{isConnected && patientAudio && (
+									<div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mr-1">
+										<Volume2 className="size-3 text-emerald-400" />
+										<span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Patient</span>
 									</div>
 								)}
-							</>
-						)}
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* Control console */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				{/* Connection + mic controls */}
-				<Card className="bg-muted/30 border-dashed">
-					<CardHeader className="pb-3">
-						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Link Management</p>
-					</CardHeader>
-					<CardContent className="flex flex-col gap-3">
-						<Button
-							onClick={connectStream}
-							disabled={isConnected}
-							className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-						>
-							<Video className="size-4 mr-2" />
-							Initialize Stream
-						</Button>
-						<Button
-							variant="outline"
-							onClick={disconnectStream}
-							disabled={!isConnected}
-							className="w-full border-red-500/20 hover:bg-red-500/10 hover:text-red-500 transition-colors"
-						>
-							<VideoOff className="size-4 mr-2" />
-							Terminate Link
-						</Button>
-
-						{/* Mic mute/unmute — only shown when connected */}
-						<div className="pt-1 border-t border-border/50">
-							<Button
-								onClick={() => micMuted ? unmuteMic() : muteMic(true)}
-								disabled={!isConnected}
-								className={`w-full font-bold transition-colors ${
-									micMuted
-										? "bg-zinc-800 hover:bg-zinc-700 text-white"
-										: "bg-red-600 hover:bg-red-500 text-white"
-								}`}
-							>
-								{micMuted
-									? <><Mic className="size-4 mr-2" />Unmute My Mic</>
-									: <><MicOff className="size-4 mr-2" />Mute My Mic</>}
-							</Button>
-							<p className="mt-1 text-[9px] text-muted-foreground text-center">
-								{micMuted ? "Patient cannot hear you" : "Patient can hear you"}
-							</p>
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* D-Pad */}
-				<Card className="md:col-span-1">
-					<CardHeader className="pb-3">
-						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Precision PTZ</p>
-					</CardHeader>
-					<CardContent className="flex flex-col items-center gap-3">
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							className="w-full shrink-0 gap-2"
-							onClick={() => sendCameraControl("reset")}
-						>
-							<RotateCcw className="size-4 shrink-0" aria-hidden />
-							Reset camera position
-						</Button>
-						<div className="grid grid-cols-3 gap-2 bg-zinc-900 p-3 rounded-2xl border border-white/5">
-							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-up")}>
-								<ChevronUp className="size-6" />
-							</Button>
-							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-left")}>
-								<ChevronLeft className="size-6" />
-							</Button>
-							<div className="size-12 flex items-center justify-center">
-								<div className="size-1.5 rounded-full bg-primary animate-pulse" />
+								<StatusBadge status={isConnected ? "online" : "offline"} size="sm" />
+								<StreamIconButton
+									label="Connect stream"
+									onClick={connectStream}
+									disabled={isConnected}
+									active={isConnected}
+								>
+									<Video className="size-4" />
+								</StreamIconButton>
+								<StreamIconButton
+									label="Disconnect stream"
+									onClick={disconnectStream}
+									disabled={!isConnected}
+								>
+									<VideoOff className="size-4" />
+								</StreamIconButton>
+								<StreamIconButton
+									label={micMuted ? "Unmute mic" : "Mute mic"}
+									onClick={() => (micMuted ? unmuteMic() : muteMic(true))}
+									disabled={!isConnected}
+									active={!micMuted}
+								>
+									{micMuted ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+								</StreamIconButton>
 							</div>
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-right")}>
-								<ChevronRight className="size-6" />
-							</Button>
-							<div />
-							<Button variant="secondary" size="icon" className="size-12 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-50 hover:text-white shadow-xl" onClick={() => sendCameraControl("move-down")}>
-								<ChevronDown className="size-6" />
-							</Button>
-							<div />
-						</div>
-					</CardContent>
-				</Card>
+						</CardHeader>
 
-				{/* View */}
-				<Card className="bg-muted/30 border-dashed">
-					<CardHeader className="pb-3">
-						<p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">View</p>
-					</CardHeader>
-					<CardContent>
-						<Button
-							type="button"
-							variant="secondary"
-							onClick={() => setFlip(f => !f)}
-							className="w-full bg-zinc-800/50 hover:bg-zinc-800 text-zinc-50 hover:text-white text-xs font-bold"
-						>
-							<FlipVertical className="size-4 mr-2" />
-							Flip view vertically
-						</Button>
-					</CardContent>
-				</Card>
-			</div>
+						<CardContent className="p-0">
+							<div className="relative w-full bg-black aspect-video flex items-center justify-center overflow-hidden">
+								{camSrc ? (
+									<img
+										src={camSrc}
+										alt="Facility Live Feed"
+										className={`w-full h-full object-contain transition-transform duration-500 ${flip ? "scale-y-[-1]" : ""}`}
+									/>
+								) : (
+									<div className="flex flex-col items-center gap-4 text-zinc-700 px-4 text-center">
+										<VideoOff className="size-14 animate-pulse" />
+										<div className="space-y-1">
+											<p className="text-base font-semibold text-zinc-400">No video signal</p>
+											<p className="text-xs text-zinc-600">Connect when the clinic goes live, or use chat while waiting</p>
+										</div>
+									</div>
+								)}
+								{isConnected && !micMuted && (
+									<div className="absolute top-4 right-4 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-xl border border-red-500/30">
+										<div className="size-2 rounded-full bg-red-500 animate-pulse" />
+										<span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Mic Live</span>
+									</div>
+								)}
+							</div>
+						</CardContent>
+					</Card>
 
-			<ClinicChat
-				clinicName={clinicName}
-				senderName={senderName || "Doctor"}
-				enabled={isConnected}
-			/>
-		</div>
+					<ClinicChat
+						clinicName={clinicName}
+						senderName={senderName || "Doctor"}
+						enabled
+						compact
+						embedded
+					/>
+				</TabsContent>
+
+				<TabsContent value="controls" className="mt-0">
+					<Card>
+						<CardHeader className="pb-3">
+							<p className="text-sm font-semibold">Camera Control</p>
+							<p className="text-xs text-muted-foreground">Pan, tilt, and reset the clinic camera</p>
+						</CardHeader>
+						<CardContent className="flex flex-col items-center gap-4 pb-8">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="gap-2"
+								onClick={() => sendCameraControl("reset")}
+							>
+								<RotateCcw className="size-4" />
+								Reset position
+							</Button>
+							<div className="grid grid-cols-3 gap-2 bg-zinc-900 p-3 rounded-2xl border border-white/5">
+								<div />
+								<Button variant="secondary" size="icon" className="size-12 rounded-xl" onClick={() => sendCameraControl("move-up")}>
+									<ChevronUp className="size-6" />
+								</Button>
+								<div />
+								<Button variant="secondary" size="icon" className="size-12 rounded-xl" onClick={() => sendCameraControl("move-left")}>
+									<ChevronLeft className="size-6" />
+								</Button>
+								<div className="size-12 flex items-center justify-center">
+									<div className="size-1.5 rounded-full bg-primary animate-pulse" />
+								</div>
+								<Button variant="secondary" size="icon" className="size-12 rounded-xl" onClick={() => sendCameraControl("move-right")}>
+									<ChevronRight className="size-6" />
+								</Button>
+								<div />
+								<Button variant="secondary" size="icon" className="size-12 rounded-xl" onClick={() => sendCameraControl("move-down")}>
+									<ChevronDown className="size-6" />
+								</Button>
+								<div />
+							</div>
+							<Button type="button" variant="secondary" onClick={() => setFlip((f) => !f)} className="gap-2">
+								<FlipVertical className="size-4" />
+								Flip view vertically
+							</Button>
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</Tabs>
+		</TooltipProvider>
 	);
 }

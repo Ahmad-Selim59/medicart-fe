@@ -26,6 +26,8 @@ interface ClinicChatProps {
 	clinicName: string;
 	senderName: string;
 	enabled?: boolean;
+	compact?: boolean;
+	embedded?: boolean;
 }
 
 function formatTime(ts: string): string {
@@ -118,7 +120,13 @@ function downloadImage(msg: ChatMessage) {
 	link.click();
 }
 
-export function ClinicChat({ clinicName, senderName, enabled = false }: ClinicChatProps) {
+export function ClinicChat({
+	clinicName,
+	senderName,
+	enabled = true,
+	compact = false,
+	embedded = false,
+}: ClinicChatProps) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
 	const [status, setStatus] = useState<"disconnected" | "connected" | "error">("disconnected");
@@ -235,27 +243,52 @@ export function ClinicChat({ clinicName, senderName, enabled = false }: ClinicCh
 
 	const isConnected = status === "connected";
 
+	const emptyMessage = !enabled
+		? "Chat unavailable"
+		: isConnected
+			? "No messages yet. Say hello to the clinic nurse."
+			: status === "error"
+				? "Chat connection failed — retrying…"
+				: "Connecting to clinic chat…";
+
+	const wrapperClass = embedded
+		? "rounded-b-lg border border-t-0 bg-card shadow-sm"
+		: "flex flex-col h-full min-h-[320px]";
+
 	return (
-		<Card className="flex flex-col h-full min-h-[320px]">
-			<CardHeader className="pb-3">
+		<Card className={`${wrapperClass} ${compact ? "border-none shadow-none" : ""}`}>
+			{!embedded && (
+			<CardHeader className={compact ? "pb-2 px-4 pt-4" : "pb-3"}>
 				<div className="flex items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
 						<MessageSquare className="size-4 text-muted-foreground" />
-						<CardTitle className="text-base">Clinic Chat</CardTitle>
+						<CardTitle className={compact ? "text-sm" : "text-base"}>Clinic Chat</CardTitle>
 					</div>
 					<StatusBadge status={isConnected ? "online" : "offline"} size="sm" />
 				</div>
-				<p className="text-xs text-muted-foreground">
-					{enabled
-						? "Connected with the clinic nurse during the live session."
-						: "Connect to the video stream to open chat."}
-				</p>
+				{!compact && (
+					<p className="text-xs text-muted-foreground">
+						{isConnected
+							? "Live chat with the clinic nurse."
+							: "Connecting to clinic chat…"}
+					</p>
+				)}
 			</CardHeader>
-			<CardContent className="flex flex-col flex-1 gap-3 pt-0">
-				<div className="flex-1 min-h-[200px] max-h-[360px] overflow-y-auto rounded-lg border bg-muted/30 p-3 space-y-3">
+			)}
+			{embedded && (
+				<div className="flex items-center justify-between gap-2 px-4 py-2 border-b bg-muted/30">
+					<div className="flex items-center gap-2">
+						<MessageSquare className="size-3.5 text-muted-foreground" />
+						<span className="text-xs font-semibold">Chat</span>
+					</div>
+					<StatusBadge status={isConnected ? "online" : "offline"} size="sm" />
+				</div>
+			)}
+			<CardContent className={`flex flex-col flex-1 gap-3 ${embedded ? "p-3" : "pt-0"} ${compact ? "px-4 pb-4" : ""}`}>
+				<div className={`flex-1 overflow-y-auto rounded-lg border bg-muted/30 p-3 space-y-3 ${compact ? "min-h-[160px] max-h-[240px]" : "min-h-[200px] max-h-[360px]"}`}>
 					{messages.length === 0 ? (
-						<p className="text-sm text-muted-foreground text-center py-8">
-							{isConnected ? "No messages yet. Say hello to the clinic nurse." : "Waiting for live session…"}
+						<p className="text-sm text-muted-foreground text-center py-6">
+							{emptyMessage}
 						</p>
 					) : (
 						messages.map((msg) => {
