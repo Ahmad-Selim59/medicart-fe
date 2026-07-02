@@ -9,9 +9,9 @@ import {
 	FlipVertical,
 	Mic,
 	MicOff,
+	Phone,
+	PhoneOff,
 	RotateCcw,
-	Video,
-	VideoOff,
 	Volume2,
 } from "lucide-react";
 import { StatusBadge } from "@/shared/components/custom/status-badge";
@@ -52,7 +52,7 @@ function StreamIconButton({
 						type="button"
 						variant="ghost"
 						size="icon"
-						className={`size-8 text-zinc-300 hover:text-white hover:bg-white/10 ${active ? "bg-white/15 text-white" : ""}`}
+						className={`size-8 text-zinc-300 hover:text-white hover:bg-white/10 ${active ? "bg-emerald-500/20 text-emerald-400" : ""}`}
 						onClick={onClick}
 						disabled={disabled}
 						aria-label={label}
@@ -93,7 +93,9 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		if (!audioCtxRef.current) {
 			audioCtxRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
 		}
-		if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
+		if (audioCtxRef.current.state === "suspended") {
+			void audioCtxRef.current.resume();
+		}
 		return audioCtxRef.current;
 	}
 
@@ -119,6 +121,9 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		const wsUrl = httpUrl.startsWith("ws") ? httpUrl : httpUrl.replace(HTTP_TO_WS_PATTERN, "ws");
 		const sock = new WebSocket(wsUrl);
 		sock.binaryType = "arraybuffer";
+		sock.onopen = () => {
+			void getAudioCtx().resume();
+		};
 		sock.onclose = () => {
 			audioWsRef.current = null;
 			nextPlayRef.current = 0;
@@ -193,6 +198,7 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 
 	const connectStream = useCallback(() => {
 		if (ws) return;
+		void getAudioCtx().resume();
 		const base = (API_BASE || "").replace(REGEX_PATTERN, "");
 		const httpUrl = `${base}/ws/stream?clinic=${encodeURIComponent(clinicName)}&patient=`;
 		const wsUrl = httpUrl.startsWith("ws") ? httpUrl : httpUrl.replace(HTTP_TO_WS_PATTERN, "ws");
@@ -234,54 +240,58 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 		}).catch(() => {});
 	}
 
-	const isConnected = camStatus === "connected" || camStatus === "streaming";
+	const isInCall = camStatus === "connected" || camStatus === "streaming";
 
 	return (
 		<TooltipProvider>
-			<Tabs defaultValue="stream" className="space-y-4">
-				<TabsList className="bg-muted/50">
-					<TabsTrigger value="stream">Live Stream</TabsTrigger>
-					<TabsTrigger value="controls">Camera Control</TabsTrigger>
+			<Tabs defaultValue="stream" className="w-full flex flex-col items-center gap-4">
+				<TabsList className="bg-muted/50 border h-9 w-fit shrink-0">
+					<TabsTrigger value="stream" className="text-xs px-4">Live Stream</TabsTrigger>
+					<TabsTrigger value="controls" className="text-xs px-4">Camera Control</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value="stream" className="mt-0 space-y-0">
+				<TabsContent value="stream" className="mt-0 w-full max-w-5xl space-y-0">
 					<Card className="overflow-hidden border-none shadow-2xl bg-zinc-950 rounded-b-none">
-						<CardHeader className="flex flex-row items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-zinc-900/50">
-							<div className="min-w-0">
+						<CardHeader className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-3 border-b border-white/5 bg-zinc-900/50">
+							<div className="min-w-0 justify-self-start">
 								<p className="text-sm font-bold text-white tracking-tight truncate">Facility Live Stream</p>
 								<p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest truncate">{clinicName}</p>
 							</div>
-							<div className="flex items-center gap-1.5 shrink-0">
-								{isConnected && patientAudio && (
-									<div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mr-1">
-										<Volume2 className="size-3 text-emerald-400" />
-										<span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Patient</span>
-									</div>
-								)}
-								<StatusBadge status={isConnected ? "online" : "offline"} size="sm" />
+
+							<div className="flex items-center justify-center gap-1 rounded-full bg-black/30 px-1.5 py-1 border border-white/10">
 								<StreamIconButton
-									label="Connect stream"
+									label="Start call"
 									onClick={connectStream}
-									disabled={isConnected}
-									active={isConnected}
+									disabled={isInCall}
+									active={isInCall}
 								>
-									<Video className="size-4" />
+									<Phone className="size-4" />
 								</StreamIconButton>
 								<StreamIconButton
-									label="Disconnect stream"
+									label="End call"
 									onClick={disconnectStream}
-									disabled={!isConnected}
+									disabled={!isInCall}
 								>
-									<VideoOff className="size-4" />
+									<PhoneOff className="size-4" />
 								</StreamIconButton>
 								<StreamIconButton
 									label={micMuted ? "Unmute mic" : "Mute mic"}
 									onClick={() => (micMuted ? unmuteMic() : muteMic(true))}
-									disabled={!isConnected}
+									disabled={!isInCall}
 									active={!micMuted}
 								>
 									{micMuted ? <Mic className="size-4" /> : <MicOff className="size-4" />}
 								</StreamIconButton>
+							</div>
+
+							<div className="flex items-center justify-end gap-2 justify-self-end">
+								{isInCall && patientAudio && (
+									<div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+										<Volume2 className="size-3 text-emerald-400" />
+										<span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Patient</span>
+									</div>
+								)}
+								<StatusBadge status={isInCall ? "online" : "offline"} size="sm" />
 							</div>
 						</CardHeader>
 
@@ -295,14 +305,14 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 									/>
 								) : (
 									<div className="flex flex-col items-center gap-4 text-zinc-700 px-4 text-center">
-										<VideoOff className="size-14 animate-pulse" />
+										<PhoneOff className="size-14 animate-pulse" />
 										<div className="space-y-1">
-											<p className="text-base font-semibold text-zinc-400">No video signal</p>
-											<p className="text-xs text-zinc-600">Connect when the clinic goes live, or use chat while waiting</p>
+											<p className="text-base font-semibold text-zinc-400">No active call</p>
+											<p className="text-xs text-zinc-600">Press the call button when the clinic is live</p>
 										</div>
 									</div>
 								)}
-								{isConnected && !micMuted && (
+								{isInCall && !micMuted && (
 									<div className="absolute top-4 right-4 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-xl border border-red-500/30">
 										<div className="size-2 rounded-full bg-red-500 animate-pulse" />
 										<span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Mic Live</span>
@@ -315,13 +325,13 @@ export function FacilityCameraView({ clinicName, senderName }: FacilityCameraVie
 					<ClinicChat
 						clinicName={clinicName}
 						senderName={senderName || "Doctor"}
-						enabled
+						enabled={isInCall}
 						compact
 						embedded
 					/>
 				</TabsContent>
 
-				<TabsContent value="controls" className="mt-0">
+				<TabsContent value="controls" className="mt-0 w-full max-w-5xl">
 					<Card>
 						<CardHeader className="pb-3">
 							<p className="text-sm font-semibold">Camera Control</p>

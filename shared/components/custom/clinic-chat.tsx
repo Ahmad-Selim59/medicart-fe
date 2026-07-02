@@ -123,7 +123,7 @@ function downloadImage(msg: ChatMessage) {
 export function ClinicChat({
 	clinicName,
 	senderName,
-	enabled = true,
+	enabled = false,
 	compact = false,
 	embedded = false,
 }: ClinicChatProps) {
@@ -150,7 +150,11 @@ export function ClinicChat({
 	}, []);
 
 	const connect = useCallback(() => {
-		if (wsRef.current || !clinicName) return;
+		if (!clinicName) return;
+		const existing = wsRef.current;
+		if (existing && (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)) {
+			return;
+		}
 
 		const sock = new WebSocket(chatWSURL(API_BASE || "http://localhost:8081"));
 		wsRef.current = sock;
@@ -244,11 +248,11 @@ export function ClinicChat({
 	const isConnected = status === "connected";
 
 	const emptyMessage = !enabled
-		? "Chat unavailable"
+		? "Start a call to open chat."
 		: isConnected
 			? "No messages yet. Say hello to the clinic nurse."
 			: status === "error"
-				? "Chat connection failed — retrying…"
+				? "Chat connection failed."
 				: "Connecting to clinic chat…";
 
 	const wrapperClass = embedded
@@ -363,7 +367,7 @@ export function ClinicChat({
 					<Input
 						value={input}
 						onChange={(e) => setInput(e.target.value)}
-						placeholder={isConnected ? "Message the clinic nurse…" : "Chat unavailable"}
+						placeholder={isConnected ? "Message the clinic nurse…" : enabled ? "Connecting…" : "Start a call to chat"}
 						disabled={!isConnected || sendingImage}
 						className="flex-1"
 					/>
