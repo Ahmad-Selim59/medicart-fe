@@ -56,6 +56,15 @@ export interface StethoscopeStream {
 	value?: number; // Pulse rate (if heartrate)
 }
 
+export interface EcgReading {
+	type: "ecg";
+	image: string;
+	image_mime: string;
+	timestamp?: string;
+	patient_name?: string;
+	clinic_name?: string;
+}
+
 export interface CameraControlRequest {
 	command: string;
 }
@@ -92,6 +101,8 @@ export interface Patient {
 	name: string;
 	gender: string;
 	age: number;
+	weight?: number;
+	height?: number;
 	status: "stable" | "critical" | "warning";
 	action: string;
 	lastChecked: string;
@@ -102,5 +113,6 @@ export interface Patient {
 		glucose: BloodGlucoseData[];
 		temperature: BodyTemperatureData[];
 		stethoscope: StethoscopeStream[];
+		ecg?: EcgReading[];
 	};
 }

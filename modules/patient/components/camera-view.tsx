@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FlipVertical, Mic, MicOff, Video, VideoOff, Volume2 } from "lucide-react";
 import { StatusBadge } from "@/shared/components/custom/status-badge";
+import { ClinicChat } from "@/shared/components/custom/clinic-chat";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Patient } from "@/shared/types/api";
@@ -12,7 +13,7 @@ const REGEX_PATTERN = /\/$/;
 const HTTP_TO_WS_PATTERN = /^http/;
 const SAMPLE_RATE = 16000;
 
-export function CameraView({ patient }: { patient: Patient }) {
+export function CameraView({ patient, senderName }: { patient: Patient; senderName?: string }) {
 	// ── Camera state ────────────────────────────────────────────────────────
 	const [camSrc, setCamSrc] = useState("");
 	const [camStatus, setCamStatus] = useState<"disconnected" | "connected" | "streaming" | "error">("disconnected");
@@ -192,7 +193,8 @@ export function CameraView({ patient }: { patient: Patient }) {
 	const isConnected = camStatus === "connected" || camStatus === "streaming";
 
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+		<div className="space-y-6">
+			<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 			{/* Camera feed */}
 			<Card className="lg:col-span-3">
 				<CardHeader>
@@ -299,6 +301,13 @@ export function CameraView({ patient }: { patient: Patient }) {
 					</Button>
 				</CardContent>
 			</Card>
+			</div>
+
+			<ClinicChat
+				clinicName={patient?.clinicId || ""}
+				senderName={senderName || "Doctor"}
+				enabled={isConnected}
+			/>
 		</div>
 	);
 }

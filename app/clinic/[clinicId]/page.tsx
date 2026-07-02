@@ -102,6 +102,16 @@ export default async function ClinicDetailPage({
 		return <div className="p-8 text-center text-muted-foreground">Unable to load clinic details. Please try again later.</div>;
 	}
 
+	let senderName = "Doctor";
+	if (user) {
+		const { data: profile } = await supabase
+			.from("profiles")
+			.select("full_name")
+			.eq("id", user.id)
+			.single();
+		senderName = profile?.full_name || user.user_metadata?.full_name || "Doctor";
+	}
+
 	return (
 		<ClinicPageTabs
 			leftHeader={(
@@ -118,7 +128,7 @@ export default async function ClinicDetailPage({
 		>
 			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
 				<TabsContent value="camera" className="mt-0">
-					<FacilityCameraView clinicName={clinic.name} />
+					<FacilityCameraView clinicName={clinic.name} senderName={senderName} />
 				</TabsContent>
 
 

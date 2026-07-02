@@ -1,5 +1,5 @@
 "use client";
-import { Activity, Clock, Droplets, HeartPulse, Thermometer, User, Wind } from "lucide-react";
+import { Activity, Clock, Droplets, HeartPulse, Ruler, Scale, Thermometer, User, Wind } from "lucide-react";
 
 import { StatusBadge } from "@/shared/components/custom/status-badge";
 import { VitalSignCard } from "@/shared/components/custom/vital-sign-card";
@@ -45,12 +45,22 @@ export function PatientData({ patient, clinics }: { patient: Patient, clinics: C
 						<div className="flex items-center gap-2 text-sm">
 							<User className="size-4 text-muted-foreground" />
 							<span className="text-muted-foreground">Gender:</span>
-							<span className="font-medium">{patient.gender}</span>
+							<span className="font-medium">{patient.gender || "Unknown"}</span>
 						</div>
 						<div className="flex items-center gap-2 text-sm">
 							<User className="size-4 text-muted-foreground" />
 							<span className="text-muted-foreground">Age:</span>
-							<span className="font-medium">{patient.age}</span>
+							<span className="font-medium">{patient.age > 0 ? patient.age : "—"}</span>
+						</div>
+						<div className="flex items-center gap-2 text-sm">
+							<Scale className="size-4 text-muted-foreground" />
+							<span className="text-muted-foreground">Weight:</span>
+							<span className="font-medium">{patient.weight && patient.weight > 0 ? `${patient.weight} kg` : "—"}</span>
+						</div>
+						<div className="flex items-center gap-2 text-sm">
+							<Ruler className="size-4 text-muted-foreground" />
+							<span className="text-muted-foreground">Height:</span>
+							<span className="font-medium">{patient.height && patient.height > 0 ? `${patient.height} cm` : "—"}</span>
 						</div>
 						<div className="flex items-center gap-2 text-sm">
 							<Activity className="size-4 text-muted-foreground" />

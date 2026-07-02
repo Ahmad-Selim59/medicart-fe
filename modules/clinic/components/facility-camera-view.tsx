@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FlipVertical, Mic, MicOff, RotateCcw, Video, VideoOff, Volume2 } from "lucide-react";
 import { StatusBadge } from "@/shared/components/custom/status-badge";
+import { ClinicChat } from "@/shared/components/custom/clinic-chat";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { API_BASE } from "@/shared/api/client";
@@ -13,9 +14,10 @@ const SAMPLE_RATE = 16000;
 
 interface FacilityCameraViewProps {
 	clinicName: string;
+	senderName?: string;
 }
 
-export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
+export function FacilityCameraView({ clinicName, senderName }: FacilityCameraViewProps) {
 	// ── Camera state ────────────────────────────────────────────────────────
 	const [camSrc, setCamSrc] = useState("");
 	const [camStatus, setCamStatus] = useState<"disconnected" | "connected" | "streaming" | "error">("disconnected");
@@ -363,6 +365,12 @@ export function FacilityCameraView({ clinicName }: FacilityCameraViewProps) {
 					</CardContent>
 				</Card>
 			</div>
+
+			<ClinicChat
+				clinicName={clinicName}
+				senderName={senderName || "Doctor"}
+				enabled={isConnected}
+			/>
 		</div>
 	);
 }

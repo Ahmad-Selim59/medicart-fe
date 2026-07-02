@@ -1,5 +1,6 @@
 import { PatientData } from "@/modules/patient/components/patient-data";
 import { CameraView } from "@/modules/patient/components/camera-view";
+import { EcgReadings } from "@/modules/patient/components/ecg-readings";
 import { AudioCommunication } from "@/modules/patient/components/audio-communication";
 import SensorData from "@/modules/patient/components/sensor-data";
 import { Patient, Clinic } from "@/shared/types/api";
@@ -55,6 +56,16 @@ export default async function PatientPage({
 	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
 	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
 
+	let senderName = "Doctor";
+	if (user) {
+		const { data: profile } = await supabase
+			.from("profiles")
+			.select("full_name")
+			.eq("id", user.id)
+			.single();
+		senderName = profile?.full_name || user.user_metadata?.full_name || "Doctor";
+	}
+
 	return (
 		<>
 			<header className="sticky top-0 z-10 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-background/80 backdrop-blur border-b">
@@ -72,7 +83,8 @@ export default async function PatientPage({
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
 				<PatientData patient={patient} clinics={clinics} />
 				<SensorData patient={patient} />
-				<CameraView patient={patient} />
+				<EcgReadings patient={patient} />
+				<CameraView patient={patient} senderName={senderName} />
 				<AudioCommunication patient={patient} />
 			</div>
 		</>
