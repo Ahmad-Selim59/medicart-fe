@@ -160,6 +160,7 @@ export function ClinicChat({
 		wsRef.current = sock;
 
 		sock.onopen = () => {
+			setMessages([]);
 			setStatus("connected");
 			sock.send(JSON.stringify({
 				type: "register",
