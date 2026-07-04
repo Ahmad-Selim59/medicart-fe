@@ -2,10 +2,11 @@
 import type { ReactNode } from "react";
 
 import { TrendingDown, TrendingUp } from "lucide-react";
-import { Area, AreaChart } from "recharts";
+import { Area, AreaChart, YAxis } from "recharts";
 
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { ChartContainer } from "@/shared/components/ui/chart";
+import { dataPaddedYAxisDomain } from "@/shared/lib/chart-domain";
 import { cn } from "@/shared/lib/utils";
 
 interface StatCardProps {
@@ -49,6 +50,7 @@ export function StatCard({ title, value, icon, iconClassName, trend, trendValue,
 				{data && data.length > 0 && (
 					<ChartContainer config={sparkConfig} className="h-[40px] w-full aspect-auto">
 						<AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+							<YAxis hide domain={dataPaddedYAxisDomain} />
 							<defs>
 								<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
 									<stop offset="0%" stopColor={chartColor} stopOpacity={0.4} />
@@ -58,6 +60,7 @@ export function StatCard({ title, value, icon, iconClassName, trend, trendValue,
 							<Area
 								type="monotone"
 								dataKey="value"
+								baseValue="dataMin"
 								stroke={chartColor}
 								strokeWidth={1.5}
 								fill={`url(#${gradientId})`}

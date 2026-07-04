@@ -1,7 +1,5 @@
 import { PatientData } from "@/modules/patient/components/patient-data";
-import { CameraView } from "@/modules/patient/components/camera-view";
 import { EcgReadings } from "@/modules/patient/components/ecg-readings";
-import { AudioCommunication } from "@/modules/patient/components/audio-communication";
 import SensorData from "@/modules/patient/components/sensor-data";
 import { Patient, Clinic } from "@/shared/types/api";
 
@@ -56,16 +54,6 @@ export default async function PatientPage({
 	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
 	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
 
-	let senderName = "Doctor";
-	if (user) {
-		const { data: profile } = await supabase
-			.from("profiles")
-			.select("full_name")
-			.eq("id", user.id)
-			.single();
-		senderName = profile?.full_name || user.user_metadata?.full_name || "Doctor";
-	}
-
 	return (
 		<>
 			<header className="sticky top-0 z-10 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-background/80 backdrop-blur border-b">
@@ -75,7 +63,7 @@ export default async function PatientPage({
 					<h1 className="text-sm sm:text-base font-semibold leading-tight truncate">
 						{patient.name}
 					</h1>
-					<p className="hidden sm:block text-xs text-muted-foreground truncate">Vitals, history, and live monitoring</p>
+					<p className="hidden sm:block text-xs text-muted-foreground truncate">Vitals and health history</p>
 				</div>
 				<ThemeToggle />
 			</header>
@@ -84,8 +72,6 @@ export default async function PatientPage({
 				<PatientData patient={patient} clinics={clinics} />
 				<SensorData patient={patient} />
 				<EcgReadings patient={patient} />
-				<CameraView patient={patient} senderName={senderName} />
-				<AudioCommunication patient={patient} />
 			</div>
 		</>
 	);
