@@ -1,7 +1,5 @@
 "use client";
 import {
-	Area,
-	AreaChart,
 	CartesianGrid,
 	Line,
 	LineChart,
@@ -27,12 +25,25 @@ function formatTime(timestamp?: string): string {
 	});
 }
 
-function toSensorNumber(value: unknown): number | undefined {
-	return toChartNumber(value);
+function mapReadings<T>(
+	readings: T[] | undefined,
+	mapper: (reading: T, index: number) => { time: string; [key: string]: string | number | undefined },
+) {
+	return (readings ?? [])
+		.map((reading, index) => mapper(reading, index))
+		.filter(row => Object.entries(row).some(([key, value]) => key !== "time" && value !== undefined));
 }
 
-const hrConfig = {
+function latestValue(values: (number | undefined)[]): string {
+	const last = [...values].reverse().find(v => v !== undefined);
+	return last !== undefined ? String(last) : "—";
+}
+
+const prConfig = {
 	pr: { label: "Heart Rate (bpm)", color: "oklch(0.65 0.22 15)" },
+} satisfies ChartConfig;
+
+const spo2Config = {
 	spo2: { label: "SpO2 (%)", color: "oklch(0.65 0.15 250)" },
 } satisfies ChartConfig;
 
@@ -51,9 +62,91 @@ const tempConfig = {
 
 function EmptyChart({ message }: { message: string }) {
 	return (
-		<div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+		<div className="flex h-[260px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
 			{message}
 		</div>
+	);
+}
+
+interface MetricChartProps {
+	title: string;
+	description: string;
+	latest?: string;
+	unit?: string;
+	data: Array<{ time: string; [key: string]: string | number | undefined }>;
+	config: ChartConfig;
+	emptyMessage: string;
+	dataKeys: string[];
+	domain: [number, number];
+	referenceLines?: Array<{ y: number; label: string }>;
+}
+
+function MetricChart({
+	title,
+	description,
+	latest,
+	unit,
+	data,
+	config,
+	emptyMessage,
+	dataKeys,
+	domain,
+	referenceLines = [],
+}: MetricChartProps) {
+	return (
+		<Card>
+			<CardHeader className="pb-2">
+				<div className="flex items-start justify-between gap-4">
+					<div>
+						<CardTitle>{title}</CardTitle>
+						<CardDescription>{description}</CardDescription>
+					</div>
+					{latest !== undefined && (
+						<div className="text-right shrink-0">
+							<p className="text-2xl font-semibold tabular-nums">{latest}</p>
+							{unit && <p className="text-xs text-muted-foreground">{unit}</p>}
+						</div>
+					)}
+				</div>
+			</CardHeader>
+			<CardContent>
+				{data.length === 0 ? (
+					<EmptyChart message={emptyMessage} />
+				) : (
+					<ChartContainer config={config} className="!aspect-auto h-[260px] w-full">
+						<LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
+							<CartesianGrid vertical={false} strokeDasharray="3 3" />
+							<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+							<YAxis tickLine={false} axisLine={false} domain={domain} width={40} />
+							<ChartTooltip content={<ChartTooltipContent />} />
+							{dataKeys.length > 1 && <ChartLegend content={<ChartLegendContent />} />}
+							{referenceLines.map(line => (
+								<ReferenceLine
+									key={line.label}
+									y={line.y}
+									stroke="oklch(0.7 0.15 25)"
+									strokeDasharray="4 4"
+									label={{ value: line.label, position: "right", fontSize: 10 }}
+								/>
+							))}
+							{dataKeys.map(key => (
+								<Line
+									key={key}
+									type="linear"
+									dataKey={key}
+									stroke={`var(--color-${key})`}
+									strokeWidth={2}
+									dot={{ r: 4 }}
+									activeDot={{ r: 5 }}
+									isAnimationActive={false}
+									connectNulls
+								/>
+							))}
+						</LineChart>
+					</ChartContainer>
+				)}
+			</CardContent>
+		</Card>
 	);
 }
 
@@ -61,160 +154,111 @@ export default function SensorData({ patient }: { patient: Patient }) {
 	if (!patient)
 		return null;
 
-	const hrData = (patient.data?.heartRate ?? [])
-		.map((d: any) => ({
-			time: formatTime(d.timestamp),
-			pr: toSensorNumber(d.pr),
-			spo2: toSensorNumber(d.spo2),
-		}))
-		.filter(d => d.pr !== undefined || d.spo2 !== undefined);
+	const hrData = mapReadings(patient.data?.heartRate, (d, index) => ({
+		time: formatTime(d.timestamp) || `#${index + 1}`,
+		pr: toChartNumber(d.pr),
+	}));
 
-	const bpData = (patient.data?.bloodPressure ?? [])
-		.map((d: any) => ({
-			time: formatTime(d.timestamp),
-			sys: toSensorNumber(d.sys),
-			dia: toSensorNumber(d.dia),
-		}))
-		.filter(d => d.sys !== undefined && d.dia !== undefined);
+	const spo2Data = mapReadings(patient.data?.heartRate, (d, index) => ({
+		time: formatTime(d.timestamp) || `#${index + 1}`,
+		spo2: toChartNumber(d.spo2),
+	}));
 
-	const glucoseData = (patient.data?.glucose ?? [])
-		.map((d: any) => ({
-			time: formatTime(d.timestamp),
-			glu: toSensorNumber(d.glu),
-		}))
-		.filter(d => d.glu !== undefined);
+	const bpData = mapReadings(patient.data?.bloodPressure, (d, index) => ({
+		time: formatTime(d.timestamp) || `#${index + 1}`,
+		sys: toChartNumber(d.sys),
+		dia: toChartNumber(d.dia),
+	}));
 
-	const tempData = (patient.data?.temperature ?? [])
-		.map((d: any) => ({
-			time: formatTime(d.timestamp),
-			temp: toSensorNumber(d.temp),
-		}))
-		.filter(d => d.temp !== undefined);
+	const glucoseData = mapReadings(patient.data?.glucose, (d, index) => ({
+		time: formatTime(d.timestamp) || `#${index + 1}`,
+		glu: toChartNumber(d.glu),
+	}));
 
-	const hrDomain = paddedDomainFromValues(hrData.flatMap(d => [d.pr, d.spo2].filter((v): v is number => v !== undefined)));
-	const prDomain = paddedDomainFromValues(hrData.map(d => d.pr).filter((v): v is number => v !== undefined));
-	const spo2Domain = paddedDomainFromValues(hrData.map(d => d.spo2).filter((v): v is number => v !== undefined));
-	const bpDomain = paddedDomainFromValues(bpData.flatMap(d => [d.sys!, d.dia!]));
-	const glucoseDomain = paddedDomainFromValues(glucoseData.map(d => d.glu!));
-	const tempDomain = paddedDomainFromValues(tempData.map(d => d.temp!));
+	const tempData = mapReadings(patient.data?.temperature, (d, index) => ({
+		time: formatTime(d.timestamp) || `#${index + 1}`,
+		temp: toChartNumber(d.temp),
+	}));
+
+	const prDomain = paddedDomainFromValues(hrData.map(d => d.pr).filter((v): v is number => typeof v === "number"));
+	const spo2Domain = paddedDomainFromValues(spo2Data.map(d => d.spo2).filter((v): v is number => typeof v === "number"));
+	const bpDomain = paddedDomainFromValues(bpData.flatMap(d => [d.sys, d.dia].filter((v): v is number => typeof v === "number")));
+	const glucoseDomain = paddedDomainFromValues(glucoseData.map(d => d.glu).filter((v): v is number => typeof v === "number"));
+	const tempDomain = paddedDomainFromValues(tempData.map(d => d.temp).filter((v): v is number => typeof v === "number"));
 
 	return (
-		<div className="space-y-6">
-			<Card>
-				<CardHeader>
-					<CardTitle>Heart Rate & SpO2</CardTitle>
-					<CardDescription>Pulse rate and oxygen saturation over time</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{hrData.length === 0 ? (
-						<EmptyChart message="No heart rate or SpO2 readings yet" />
-					) : (
-						<ChartContainer config={hrConfig} className="h-[300px] w-full aspect-auto">
-							<LineChart data={hrData} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
-								<CartesianGrid vertical={false} strokeDasharray="3 3" />
-								<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-								<YAxis
-									yAxisId="left"
-									tickLine={false}
-									axisLine={false}
-									domain={hrData.some(d => d.pr !== undefined) ? prDomain : hrDomain}
-								/>
-								<YAxis
-									yAxisId="right"
-									orientation="right"
-									tickLine={false}
-									axisLine={false}
-									domain={hrData.some(d => d.spo2 !== undefined) ? spo2Domain : hrDomain}
-								/>
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<ChartLegend content={<ChartLegendContent />} />
-								<Line yAxisId="left" type="linear" dataKey="pr" stroke="var(--color-pr)" strokeWidth={2} connectNulls dot={{ r: 3 }} />
-								<Line yAxisId="right" type="linear" dataKey="spo2" stroke="var(--color-spo2)" strokeWidth={2} connectNulls dot={{ r: 3 }} />
-							</LineChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Blood Pressure</CardTitle>
-					<CardDescription>Systolic and diastolic pressure trends</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{bpData.length === 0 ? (
-						<EmptyChart message="No blood pressure readings yet" />
-					) : (
-						<ChartContainer config={bpConfig} className="h-[300px] w-full aspect-auto">
-							<LineChart data={bpData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-								<CartesianGrid vertical={false} strokeDasharray="3 3" />
-								<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-								<YAxis tickLine={false} axisLine={false} domain={bpDomain} />
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<ChartLegend content={<ChartLegendContent />} />
-								<ReferenceLine y={140} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "High", position: "right", fontSize: 10 }} />
-								<ReferenceLine y={90} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "Low", position: "right", fontSize: 10 }} />
-								<Line type="monotone" dataKey="sys" stroke="var(--color-sys)" strokeWidth={2} dot />
-								<Line type="monotone" dataKey="dia" stroke="var(--color-dia)" strokeWidth={2} dot />
-							</LineChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Blood Glucose</CardTitle>
-					<CardDescription>Glucose levels over time (mg/dL)</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{glucoseData.length === 0 ? (
-						<EmptyChart message="No glucose readings yet" />
-					) : (
-						<ChartContainer config={glucoseConfig} className="h-[300px] w-full aspect-auto">
-							<AreaChart data={glucoseData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-								<CartesianGrid vertical={false} strokeDasharray="3 3" />
-								<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-								<YAxis tickLine={false} axisLine={false} domain={glucoseDomain} />
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<ReferenceLine y={140} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "High", position: "right", fontSize: 10 }} />
-								<ReferenceLine y={70} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "Low", position: "right", fontSize: 10 }} />
-								<defs>
-									<linearGradient id="glucoseGradient" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="0%" stopColor="var(--color-glu)" stopOpacity={0.3} />
-										<stop offset="100%" stopColor="var(--color-glu)" stopOpacity={0.05} />
-									</linearGradient>
-								</defs>
-								<Area type="monotone" dataKey="glu" baseValue="dataMin" stroke="var(--color-glu)" strokeWidth={2} fill="url(#glucoseGradient)" dot />
-							</AreaChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Body Temperature</CardTitle>
-					<CardDescription>Temperature readings over time (°C)</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{tempData.length === 0 ? (
-						<EmptyChart message="No temperature readings yet" />
-					) : (
-						<ChartContainer config={tempConfig} className="h-[300px] w-full aspect-auto">
-							<LineChart data={tempData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-								<CartesianGrid vertical={false} strokeDasharray="3 3" />
-								<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-								<YAxis tickLine={false} axisLine={false} domain={tempDomain} />
-								<ChartTooltip content={<ChartTooltipContent />} />
-								<ReferenceLine y={37.2} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "High", position: "right", fontSize: 10 }} />
-								<ReferenceLine y={36.1} stroke="oklch(0.7 0.15 25)" strokeDasharray="4 4" label={{ value: "Low", position: "right", fontSize: 10 }} />
-								<Line type="monotone" dataKey="temp" stroke="var(--color-temp)" strokeWidth={2} dot={{ r: 3 }} />
-							</LineChart>
-						</ChartContainer>
-					)}
-				</CardContent>
-			</Card>
+		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<MetricChart
+				title="Heart Rate"
+				description="Pulse rate over time"
+				latest={latestValue(hrData.map(d => typeof d.pr === "number" ? d.pr : undefined))}
+				unit="bpm"
+				data={hrData}
+				config={prConfig}
+				emptyMessage="No heart rate readings yet"
+				dataKeys={["pr"]}
+				domain={prDomain}
+			/>
+			<MetricChart
+				title="SpO2"
+				description="Oxygen saturation over time"
+				latest={latestValue(spo2Data.map(d => typeof d.spo2 === "number" ? d.spo2 : undefined))}
+				unit="%"
+				data={spo2Data}
+				config={spo2Config}
+				emptyMessage="No SpO2 readings yet"
+				dataKeys={["spo2"]}
+				domain={spo2Domain}
+			/>
+			<MetricChart
+				title="Blood Pressure"
+				description="Systolic and diastolic pressure trends"
+				latest={
+					bpData.length > 0
+						? `${latestValue(bpData.map(d => typeof d.sys === "number" ? d.sys : undefined))}/${latestValue(bpData.map(d => typeof d.dia === "number" ? d.dia : undefined))}`
+						: "—"
+				}
+				unit="mmHg"
+				data={bpData}
+				config={bpConfig}
+				emptyMessage="No blood pressure readings yet"
+				dataKeys={["sys", "dia"]}
+				domain={bpDomain}
+				referenceLines={[
+					{ y: 140, label: "High" },
+					{ y: 90, label: "Low" },
+				]}
+			/>
+			<MetricChart
+				title="Blood Glucose"
+				description="Glucose levels over time"
+				latest={latestValue(glucoseData.map(d => typeof d.glu === "number" ? d.glu : undefined))}
+				unit="mg/dL"
+				data={glucoseData}
+				config={glucoseConfig}
+				emptyMessage="No glucose readings yet"
+				dataKeys={["glu"]}
+				domain={glucoseDomain}
+				referenceLines={[
+					{ y: 140, label: "High" },
+					{ y: 70, label: "Low" },
+				]}
+			/>
+			<MetricChart
+				title="Body Temperature"
+				description="Temperature readings over time"
+				latest={latestValue(tempData.map(d => typeof d.temp === "number" ? d.temp : undefined))}
+				unit="°C"
+				data={tempData}
+				config={tempConfig}
+				emptyMessage="No temperature readings yet"
+				dataKeys={["temp"]}
+				domain={tempDomain}
+				referenceLines={[
+					{ y: 37.2, label: "High" },
+					{ y: 36.1, label: "Low" },
+				]}
+			/>
 		</div>
 	);
 }
