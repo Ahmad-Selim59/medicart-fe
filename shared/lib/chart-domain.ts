@@ -28,6 +28,21 @@ export const dataPaddedDomainMax: DomainBound = (min, max) => {
 	return max + paddingForRange(min, max);
 };
 
+export function paddedDomainFromValues(values: number[]): [number, number] {
+	const valid = values.filter(Number.isFinite);
+	if (valid.length === 0) {
+		return [0, 1];
+	}
+
+	const min = Math.min(...valid);
+	const max = Math.max(...valid);
+	const pad = min === max
+		? Math.max(Math.abs(min) * 0.05, min < 10 ? 0.5 : 1)
+		: (max - min) * 0.1;
+
+	return [min - pad, max + pad];
+}
+
 export const dataPaddedYAxisDomain: [DomainBound, DomainBound] = [
 	dataPaddedDomainMin,
 	dataPaddedDomainMax,
