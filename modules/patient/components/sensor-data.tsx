@@ -20,7 +20,11 @@ import { Patient } from "@/shared/types/api";
 function formatTime(timestamp?: string): string {
 	if (!timestamp)
 		return "";
-	return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	return new Date(timestamp).toLocaleTimeString([], {
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+	});
 }
 
 function finiteNumber(value: unknown): number | undefined {

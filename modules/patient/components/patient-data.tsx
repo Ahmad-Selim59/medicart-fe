@@ -6,7 +6,7 @@ import { VitalSignCard } from "@/shared/components/custom/vital-sign-card";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 function getVitalStatus(value: number, min: number, max: number): "normal" | "warning" | "critical" {
-	if (!Number.isFinite(value) || value <= 0)
+	if (!Number.isFinite(value))
 		return "normal";
 	if (value < min * 0.85 || value > max * 1.15)
 		return "critical";
@@ -18,7 +18,7 @@ function getVitalStatus(value: number, min: number, max: number): "normal" | "wa
 import { Patient, Clinic } from "@/shared/types/api";
 
 function formatVital(value?: number): string | number {
-	return Number.isFinite(value) && value! > 0 ? value! : "—";
+	return Number.isFinite(value) ? value! : "—";
 }
 
 export function PatientData({ patient, clinics }: { patient: Patient, clinics: Clinic[] }) {
