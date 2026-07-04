@@ -6,7 +6,7 @@ import { Area, AreaChart, YAxis } from "recharts";
 
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { ChartContainer } from "@/shared/components/ui/chart";
-import { dataPaddedYAxisDomain } from "@/shared/lib/chart-domain";
+import { dataPaddedYAxisDomain, finiteChartPoints } from "@/shared/lib/chart-domain";
 import { cn } from "@/shared/lib/utils";
 
 interface StatCardProps {
@@ -25,6 +25,7 @@ const WHITESPACE_RE = /\s/g;
 
 export function StatCard({ title, value, icon, iconClassName, trend, trendValue, data, chartColor = "var(--chart-1)" }: StatCardProps) {
 	const gradientId = `spark-${title.replace(WHITESPACE_RE, "")}`;
+	const chartData = data ? finiteChartPoints(data) : [];
 	return (
 		<Card size="sm">
 			<CardContent className="space-y-3">
@@ -47,9 +48,9 @@ export function StatCard({ title, value, icon, iconClassName, trend, trendValue,
 					<p className="text-xs text-muted-foreground">{title}</p>
 					<p className="text-2xl font-semibold">{value}</p>
 				</div>
-				{data && data.length > 0 && (
+				{chartData.length > 0 && (
 					<ChartContainer config={sparkConfig} className="h-[40px] w-full aspect-auto">
-						<AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+						<AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
 							<YAxis hide domain={dataPaddedYAxisDomain} />
 							<defs>
 								<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

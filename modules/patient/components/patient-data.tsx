@@ -1,11 +1,13 @@
 "use client";
-import { Activity, Clock, Droplets, HeartPulse, Ruler, Scale, Thermometer, User, Wind } from "lucide-react";
+import { Activity, Droplets, HeartPulse, Ruler, Scale, Thermometer, User, Wind } from "lucide-react";
 
 import { StatusBadge } from "@/shared/components/custom/status-badge";
 import { VitalSignCard } from "@/shared/components/custom/vital-sign-card";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 function getVitalStatus(value: number, min: number, max: number): "normal" | "warning" | "critical" {
+	if (!Number.isFinite(value) || value <= 0)
+		return "normal";
 	if (value < min * 0.85 || value > max * 1.15)
 		return "critical";
 	if (value < min || value > max)
@@ -14,6 +16,10 @@ function getVitalStatus(value: number, min: number, max: number): "normal" | "wa
 }
 
 import { Patient, Clinic } from "@/shared/types/api";
+
+function formatVital(value?: number): string | number {
+	return Number.isFinite(value) && value! > 0 ? value! : "—";
+}
 
 export function PatientData({ patient, clinics }: { patient: Patient, clinics: Clinic[] }) {
 	const clinicName = clinics.find(c => c.id === patient.clinicId)?.name ?? "Unknown";
@@ -67,11 +73,6 @@ export function PatientData({ patient, clinics }: { patient: Patient, clinics: C
 							<span className="text-muted-foreground">Clinic:</span>
 							<span className="font-medium">{clinicName}</span>
 						</div>
-						<div className="flex items-center gap-2 text-sm">
-							<Clock className="size-4 text-muted-foreground" />
-							<span className="text-muted-foreground">Last checked:</span>
-							<span className="font-medium">{patient.lastChecked ? new Date(patient.lastChecked).toLocaleTimeString() : "Never"}</span>
-						</div>
 					</div>
 				</CardContent>
 			</Card>
@@ -81,43 +82,47 @@ export function PatientData({ patient, clinics }: { patient: Patient, clinics: C
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
 					<VitalSignCard
 						title="Heart Rate"
-						value={latestHr?.pr ?? 0}
+						value={formatVital(latestHr?.pr)}
 						unit="bpm"
 						icon={<HeartPulse className="size-4" />}
 						data={patient.data?.heartRate?.map(d => ({ value: d.pr })) ?? []}
-						status={getVitalStatus(latestHr?.pr ?? 72, 60, 100)}
+						status={getVitalStatus(latestHr?.pr ?? NaN, 60, 100)}
 					/>
 					<VitalSignCard
 						title="SpO2"
-						value={latestHr?.spo2 ?? 0}
+						value={formatVital(latestHr?.spo2)}
 						unit="%"
 						icon={<Wind className="size-4" />}
 						data={patient.data?.heartRate?.map(d => ({ value: d.spo2 })) ?? []}
-						status={getVitalStatus(latestHr?.spo2 ?? 98, 95, 100)}
+						status={getVitalStatus(latestHr?.spo2 ?? NaN, 95, 100)}
 					/>
 					<VitalSignCard
 						title="Blood Pressure"
-						value={`${latestBp?.sys ?? 0}/${latestBp?.dia ?? 0}`}
+						value={
+							Number.isFinite(latestBp?.sys) && Number.isFinite(latestBp?.dia)
+								? `${latestBp!.sys}/${latestBp!.dia}`
+								: "—"
+						}
 						unit="mmHg"
 						icon={<Activity className="size-4" />}
 						data={patient.data?.bloodPressure?.map(d => ({ value: d.sys })) ?? []}
-						status={getVitalStatus(latestBp?.sys ?? 120, 90, 140)}
+						status={getVitalStatus(latestBp?.sys ?? NaN, 90, 140)}
 					/>
 					<VitalSignCard
 						title="Temperature"
-						value={latestTemp?.temp ?? 0}
+						value={formatVital(latestTemp?.temp)}
 						unit="°C"
 						icon={<Thermometer className="size-4" />}
 						data={patient.data?.temperature?.map(d => ({ value: d.temp })) ?? []}
-						status={getVitalStatus(latestTemp?.temp ?? 36.6, 36.1, 37.2)}
+						status={getVitalStatus(latestTemp?.temp ?? NaN, 36.1, 37.2)}
 					/>
 					<VitalSignCard
 						title="Glucose"
-						value={latestGlu?.glu ?? 0}
+						value={formatVital(latestGlu?.glu)}
 						unit="mg/dL"
 						icon={<Droplets className="size-4" />}
 						data={patient.data?.glucose?.map(d => ({ value: d.glu })) ?? []}
-						status={getVitalStatus(latestGlu?.glu ?? 95, 70, 140)}
+						status={getVitalStatus(latestGlu?.glu ?? NaN, 70, 140)}
 					/>
 				</div>
 			</div>

@@ -105,7 +105,6 @@ export interface Patient {
 	height?: number;
 	status: "stable" | "critical" | "warning";
 	action: string;
-	lastChecked: string;
 	data: {
 		heartRate: HeartRateData[];
 		bloodPressure: BloodPressureResult[];

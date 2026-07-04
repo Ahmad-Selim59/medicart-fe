@@ -5,7 +5,7 @@ import { Area, AreaChart, YAxis } from "recharts";
 
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { ChartContainer } from "@/shared/components/ui/chart";
-import { dataPaddedYAxisDomain } from "@/shared/lib/chart-domain";
+import { dataPaddedYAxisDomain, finiteChartPoints } from "@/shared/lib/chart-domain";
 import { cn } from "@/shared/lib/utils";
 
 interface VitalSignCardProps {
@@ -27,6 +27,7 @@ const statusColors = {
 
 export function VitalSignCard({ title, value, unit, icon, data, status = "normal" }: VitalSignCardProps) {
 	const colors = statusColors[status];
+	const chartData = finiteChartPoints(data);
 	const chartConfig = {
 		value: { label: title, color: colors.stroke },
 	};
@@ -51,9 +52,9 @@ export function VitalSignCard({ title, value, unit, icon, data, status = "normal
 					<span className="text-2xl font-semibold">{value}</span>
 					<span className="text-xs text-muted-foreground">{unit}</span>
 				</div>
-				{data.length > 0 && (
+				{chartData.length > 0 && (
 					<ChartContainer config={chartConfig} className="h-[50px] w-full aspect-auto">
-						<AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+						<AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
 							<YAxis hide domain={dataPaddedYAxisDomain} />
 							<defs>
 								<linearGradient id={`gradient-${title.replace(WHITESPACE_RE, "")}`} x1="0" y1="0" x2="0" y2="1">
