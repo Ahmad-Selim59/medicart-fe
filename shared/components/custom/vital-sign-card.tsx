@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 
-import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { ChartContainer } from "@/shared/components/ui/chart";
@@ -13,11 +13,9 @@ interface VitalSignCardProps {
 	value: string | number;
 	unit: string;
 	icon: ReactNode;
-	data: Array<{ value: number }>;
+	data: Array<{ value: unknown }>;
 	status?: "normal" | "warning" | "critical";
 }
-
-const WHITESPACE_RE = /\s/g;
 
 const statusColors = {
 	normal: { stroke: "var(--chart-1)", fill: "var(--chart-1)" },
@@ -28,13 +26,12 @@ const statusColors = {
 export function VitalSignCard({ title, value, unit, icon, data, status = "normal" }: VitalSignCardProps) {
 	const colors = statusColors[status];
 	const chartData = finiteChartPoints(data).map((point, index) => ({
-		index,
+		tick: String(index),
 		value: point.value,
 	}));
 	const chartConfig = {
 		value: { label: title, color: colors.stroke },
 	};
-	const xMax = Math.max(chartData.length - 1, 1);
 
 	return (
 		<Card size="sm">
@@ -57,33 +54,27 @@ export function VitalSignCard({ title, value, unit, icon, data, status = "normal
 					<span className="text-xs text-muted-foreground">{unit}</span>
 				</div>
 				{chartData.length > 0 && (
-					<ChartContainer config={chartConfig} className="h-[50px] w-full aspect-auto">
-						<AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+					<ChartContainer config={chartConfig} className="!aspect-auto h-[52px] w-full">
+						<LineChart data={chartData} margin={{ top: 6, right: 8, bottom: 2, left: 8 }}>
 							<XAxis
-								dataKey="index"
-								type="number"
-								domain={[0, xMax]}
+								dataKey="tick"
+								type="category"
+								allowDuplicatedCategory
 								hide
-								padding={{ left: 12, right: 12 }}
+								padding={{ left: 16, right: 16 }}
 							/>
 							<YAxis hide domain={dataPaddedYAxisDomain} width={0} />
-							<defs>
-								<linearGradient id={`gradient-${title.replace(WHITESPACE_RE, "")}`} x1="0" y1="0" x2="0" y2="1">
-									<stop offset="0%" stopColor={colors.fill} stopOpacity={0.3} />
-									<stop offset="100%" stopColor={colors.fill} stopOpacity={0.05} />
-								</linearGradient>
-							</defs>
-							<Area
+							<Line
 								type="linear"
 								dataKey="value"
-								baseValue="dataMin"
 								stroke={colors.stroke}
 								strokeWidth={1.5}
-								fill={`url(#gradient-${title.replace(WHITESPACE_RE, "")})`}
-								dot={{ r: 2, fill: colors.stroke, strokeWidth: 0 }}
+								dot={{ r: 2.5, fill: colors.stroke, strokeWidth: 0 }}
 								activeDot={false}
+								isAnimationActive={false}
+								connectNulls
 							/>
-						</AreaChart>
+						</LineChart>
 					</ChartContainer>
 				)}
 			</CardContent>

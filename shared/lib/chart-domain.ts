@@ -10,8 +10,23 @@ function paddingForRange(min: number, max: number): number {
 	return (max - min) * 0.1;
 }
 
-export function finiteChartPoints(data: Array<{ value: number }>): Array<{ value: number }> {
-	return data.filter(point => Number.isFinite(point.value));
+export function toChartNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return value;
+	}
+	if (typeof value === "string" && value.trim() !== "") {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) {
+			return parsed;
+		}
+	}
+	return undefined;
+}
+
+export function finiteChartPoints(data: Array<{ value: unknown }>): Array<{ value: number }> {
+	return data
+		.map(point => ({ value: toChartNumber(point.value) }))
+		.filter((point): point is { value: number } => point.value !== undefined);
 }
 
 export const dataPaddedDomainMin: DomainBound = (min, max) => {

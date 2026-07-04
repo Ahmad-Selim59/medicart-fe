@@ -14,7 +14,7 @@ import type { ChartConfig } from "@/shared/components/ui/chart";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { paddedDomainFromValues } from "@/shared/lib/chart-domain";
+import { paddedDomainFromValues, toChartNumber } from "@/shared/lib/chart-domain";
 import { Patient } from "@/shared/types/api";
 
 function formatTime(timestamp?: string): string {
@@ -27,8 +27,8 @@ function formatTime(timestamp?: string): string {
 	});
 }
 
-function finiteNumber(value: unknown): number | undefined {
-	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+function toSensorNumber(value: unknown): number | undefined {
+	return toChartNumber(value);
 }
 
 const hrConfig = {
@@ -64,30 +64,30 @@ export default function SensorData({ patient }: { patient: Patient }) {
 	const hrData = (patient.data?.heartRate ?? [])
 		.map((d: any) => ({
 			time: formatTime(d.timestamp),
-			pr: finiteNumber(d.pr),
-			spo2: finiteNumber(d.spo2),
+			pr: toSensorNumber(d.pr),
+			spo2: toSensorNumber(d.spo2),
 		}))
 		.filter(d => d.pr !== undefined || d.spo2 !== undefined);
 
 	const bpData = (patient.data?.bloodPressure ?? [])
 		.map((d: any) => ({
 			time: formatTime(d.timestamp),
-			sys: finiteNumber(d.sys),
-			dia: finiteNumber(d.dia),
+			sys: toSensorNumber(d.sys),
+			dia: toSensorNumber(d.dia),
 		}))
 		.filter(d => d.sys !== undefined && d.dia !== undefined);
 
 	const glucoseData = (patient.data?.glucose ?? [])
 		.map((d: any) => ({
 			time: formatTime(d.timestamp),
-			glu: finiteNumber(d.glu),
+			glu: toSensorNumber(d.glu),
 		}))
 		.filter(d => d.glu !== undefined);
 
 	const tempData = (patient.data?.temperature ?? [])
 		.map((d: any) => ({
 			time: formatTime(d.timestamp),
-			temp: finiteNumber(d.temp),
+			temp: toSensorNumber(d.temp),
 		}))
 		.filter(d => d.temp !== undefined);
 
@@ -110,7 +110,7 @@ export default function SensorData({ patient }: { patient: Patient }) {
 						<EmptyChart message="No heart rate or SpO2 readings yet" />
 					) : (
 						<ChartContainer config={hrConfig} className="h-[300px] w-full aspect-auto">
-							<LineChart data={hrData} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+							<LineChart data={hrData} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
 								<CartesianGrid vertical={false} strokeDasharray="3 3" />
 								<XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
 								<YAxis
@@ -128,8 +128,8 @@ export default function SensorData({ patient }: { patient: Patient }) {
 								/>
 								<ChartTooltip content={<ChartTooltipContent />} />
 								<ChartLegend content={<ChartLegendContent />} />
-								<Line yAxisId="left" type="monotone" dataKey="pr" stroke="var(--color-pr)" strokeWidth={2} connectNulls={false} dot />
-								<Line yAxisId="right" type="monotone" dataKey="spo2" stroke="var(--color-spo2)" strokeWidth={2} connectNulls={false} dot />
+								<Line yAxisId="left" type="linear" dataKey="pr" stroke="var(--color-pr)" strokeWidth={2} connectNulls dot={{ r: 3 }} />
+								<Line yAxisId="right" type="linear" dataKey="spo2" stroke="var(--color-spo2)" strokeWidth={2} connectNulls dot={{ r: 3 }} />
 							</LineChart>
 						</ChartContainer>
 					)}
