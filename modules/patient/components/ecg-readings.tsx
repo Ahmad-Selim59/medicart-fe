@@ -36,7 +36,6 @@ function downloadEcg(reading: EcgReading, index: number) {
 
 export function EcgReadings({ patient }: { patient: Patient }) {
 	const ecgList = patient.data?.ecg ?? [];
-	if (ecgList.length === 0) return null;
 
 	return (
 		<Card>
@@ -45,6 +44,11 @@ export function EcgReadings({ patient }: { patient: Patient }) {
 				<CardDescription>Uploaded electrocardiogram images from the clinic</CardDescription>
 			</CardHeader>
 			<CardContent>
+				{ecgList.length === 0 ? (
+					<div className="flex h-[200px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+						No ECG readings yet
+					</div>
+				) : (
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{ecgList.map((reading, index) => (
 						<div
@@ -81,6 +85,7 @@ export function EcgReadings({ patient }: { patient: Patient }) {
 						</div>
 					))}
 				</div>
+				)}
 			</CardContent>
 		</Card>
 	);
