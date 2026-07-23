@@ -1,6 +1,6 @@
 "use client";
 
-import { login, signup } from "./actions";
+import { login, signup } from "@/app/login/actions";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
