@@ -4,7 +4,7 @@ import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { fetchBackend } from "@/shared/api/client";
-import { createClient } from "@/shared/lib/supabase/server";
+import { backendAuthHeaders, getAppSession } from "@/shared/lib/auth/app-session";
 import type { Clinic } from "@/shared/types/api";
 
 import { AddClinicButton } from "./add-clinic-button";
@@ -12,47 +12,20 @@ import { AddClinicButton } from "./add-clinic-button";
 export const revalidate = 0;
 
 export default async function ClinicListPage() {
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
-
-	let allowedClinicNames: string[] = [];
-	let isAdmin = false;
-	let token = "";
-
-	if (user) {
-		const { data: sessionData } = await supabase.auth.getSession();
-		token = sessionData.session?.access_token || "";
-
-		const { data: memberships } = await supabase
-			.from("clinic_members")
-			.select("clinics(name)")
-			.eq("user_id", user.id);
-
-		if (memberships) {
-			allowedClinicNames = memberships.map(m => (m.clinics as any).name);
-		}
-
-		const { data: profile } = await supabase
-			.from("profiles")
-			.select("role")
-			.eq("id", user.id)
-			.single();
-
-		if (profile?.role === "admin" || user.user_metadata?.role === "admin") {
-			isAdmin = true;
-		}
+	const session = await getAppSession();
+	if (!session) {
+		return null;
 	}
 
-	const { response: res, unreachable: backendUnreachable } = await fetchBackend("/api/clinics", {
-		headers: {
-			"Authorization": `Bearer ${token}`
-		}
-	});
+	const { response: res, unreachable: backendUnreachable } = await fetchBackend(
+		`/api/clinics${session.allowedClinicsQuery}`,
+		{
+			headers: backendAuthHeaders(session.token),
+		},
+	);
+
 	let clinicList: Clinic[] = res?.ok ? ((await res.json()) || []) : [];
-
-	if (user) {
-		clinicList = clinicList.filter(c => allowedClinicNames.includes(c.name));
-	}
+	clinicList = clinicList.filter((clinic) => session.clinicNames.includes(clinic.name));
 
 	return (
 		<>
@@ -64,7 +37,7 @@ export default async function ClinicListPage() {
 					<p className="hidden sm:block text-xs text-muted-foreground truncate">Connected facilities</p>
 				</div>
 				<ThemeToggle />
-				{isAdmin && <AddClinicButton />}
+				{session.isAdmin && <AddClinicButton />}
 			</header>
 
 			<div className="mx-auto max-w-7xl space-y-4 px-3 pb-8 pt-4 sm:space-y-6 sm:px-4 sm:pt-6 lg:px-8">

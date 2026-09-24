@@ -10,6 +10,7 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { TabsContent } from "@/shared/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { fetchBackend } from "@/shared/api/client";
+import { backendAuthHeaders, getAppSession } from "@/shared/lib/auth/app-session";
 import { createClient } from "@/shared/lib/supabase/server";
 import { Clinic, Patient } from "@/shared/types/api";
 
@@ -24,32 +25,15 @@ export default async function ClinicDetailPage({
 	params: Promise<{ clinicId: string }>;
 }) {
 	const { clinicId } = await params;
-	
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
 
-	let allowedClinicsQuery = "";
-	let token = "";
-	if (user) {
-		const { data: sessionData } = await supabase.auth.getSession();
-		token = sessionData.session?.access_token || "";
-
-		const { data: memberships } = await supabase
-			.from("clinic_members")
-			.select("role, clinics(name)")
-			.eq("user_id", user.id);
-		
-		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
-			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
-		}
+	const session = await getAppSession();
+	if (!session) {
+		return null;
 	}
 
-	const fetchOpts = {
-		headers: {
-			"Authorization": `Bearer ${token}`
-		}
-	};
+	const supabase = await createClient();
+	const { user } = session;
+	const fetchOpts = { headers: backendAuthHeaders(session.token) };
 
 	let clinic: Clinic = { id: "", name: clinicId, address: "", phone: "", email: "", website: "", status: "active", patientCount: 0, action: "" };
 	let patients: Patient[] = [];
@@ -60,14 +44,16 @@ export default async function ClinicDetailPage({
 	let backendUnreachable = false;
 
 	try {
-		const { response: resClinic, unreachable } = await fetchBackend(
-			`/api/clinic/${clinicId}${allowedClinicsQuery}`,
-			{
-				...fetchOpts,
-				cache: 'no-store'
-			},
-		);
-		backendUnreachable = unreachable;
+		const [{ response: resClinic, unreachable }, { response: resPatients, unreachable: patientsUnreachable }] =
+			await Promise.all([
+				fetchBackend(`/api/clinic/${clinicId}${session.allowedClinicsQuery}`, {
+					...fetchOpts,
+					cache: "no-store",
+				}),
+				fetchBackend(`/api/clinic/${clinicId}/patients${session.allowedClinicsQuery}`, fetchOpts),
+			]);
+
+		backendUnreachable = unreachable || patientsUnreachable;
 
 		if (unreachable) {
 			return (
@@ -81,6 +67,7 @@ export default async function ClinicDetailPage({
 			return <div className="p-8 text-center text-muted-foreground">Clinic not found or access denied.</div>;
 		}
 		clinic = await resClinic.json();
+		patients = resPatients?.ok ? ((await resPatients.json()) || []) : [];
 
 		if (user) {
 			const { data: dbClinic } = await supabase
@@ -88,14 +75,14 @@ export default async function ClinicDetailPage({
 				.select("id")
 				.eq("name", clinic.name)
 				.single();
-			
+
 			if (dbClinic) {
 				realClinicId = dbClinic.id;
 				const { data: members } = await supabase
 					.from("clinic_members")
 					.select("user_id, role, profiles(full_name, email)")
 					.eq("clinic_id", dbClinic.id);
-				
+
 				if (members) {
 					doctors = members;
 					const myMember = doctors.find(m => m.user_id === user.id);
@@ -106,26 +93,11 @@ export default async function ClinicDetailPage({
 				}
 			}
 		}
-
-		const { response: resPatients, unreachable: patientsUnreachable } = await fetchBackend(
-			`/api/clinic/${clinicId}/patients${allowedClinicsQuery}`,
-			fetchOpts,
-		);
-		backendUnreachable = backendUnreachable || patientsUnreachable;
-		patients = resPatients?.ok ? ((await resPatients.json()) || []) : [];
 	} catch (err) {
 		return <div className="p-8 text-center text-muted-foreground">Unable to load clinic details. Please try again later.</div>;
 	}
 
-	let senderName = "Doctor";
-	if (user) {
-		const { data: profile } = await supabase
-			.from("profiles")
-			.select("full_name")
-			.eq("id", user.id)
-			.single();
-		senderName = profile?.full_name || user.user_metadata?.full_name || "Doctor";
-	}
+	let senderName = session.profile?.full_name || user.user_metadata?.full_name || "Doctor";
 
 	return (
 		<ClinicPageTabs

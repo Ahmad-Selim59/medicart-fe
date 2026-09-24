@@ -6,41 +6,21 @@ import { BackendConnectionAlert } from "@/shared/components/custom/backend-conne
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
-
-import { createClient } from "@/shared/lib/supabase/server";
 import { fetchBackend } from "@/shared/api/client";
+import { backendAuthHeaders, getAppSession } from "@/shared/lib/auth/app-session";
 
-export const revalidate = 0; // Disable static caching
+export const revalidate = 0;
 
 export default async function DashboardPage() {
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
-
-	let allowedClinicsQuery = "";
-	let token = "";
-
-	if (user) {
-		const { data: sessionData } = await supabase.auth.getSession();
-		token = sessionData.session?.access_token || "";
-
-		const { data: memberships } = await supabase
-			.from("clinic_members")
-			.select("clinics(name)")
-			.eq("user_id", user.id);
-		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
-			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
-		} else if (user) {
-			allowedClinicsQuery = "?clinics=__none__";
-		}
+	const session = await getAppSession();
+	if (!session) {
+		return null;
 	}
 
 	const { response: res, unreachable: backendUnreachable } = await fetchBackend(
-		`/api/dashboard${allowedClinicsQuery}`,
+		`/api/dashboard${session.allowedClinicsQuery}`,
 		{
-			headers: {
-				"Authorization": `Bearer ${token}`
-			}
+			headers: backendAuthHeaders(session.token),
 		},
 	);
 
@@ -52,10 +32,6 @@ export default async function DashboardPage() {
 	const {
 		quickStats,
 		patientStatus,
-		deviceHealth,
-		readingsVolume,
-		vitalsTrends,
-		alertsTrend,
 		clinicDistribution,
 	} = data;
 
@@ -70,7 +46,7 @@ export default async function DashboardPage() {
 				</div>
 				<ThemeToggle />
 			</header>
-			
+
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
 				{backendUnreachable && <BackendConnectionAlert />}
 				<StatCards

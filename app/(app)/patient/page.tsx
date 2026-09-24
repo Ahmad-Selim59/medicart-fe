@@ -4,50 +4,26 @@ import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { fetchBackend } from "@/shared/api/client";
-import { createClient } from "@/shared/lib/supabase/server";
+import { backendAuthHeaders, getAppSession } from "@/shared/lib/auth/app-session";
 import type { Clinic, Patient } from "@/shared/types/api";
 
 export const revalidate = 0;
 
 export default async function PatientListPage() {
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
-
-	let allowedClinicsQuery = "";
-	let token = "";
-
-	if (user) {
-		const { data: sessionData } = await supabase.auth.getSession();
-		token = sessionData.session?.access_token || "";
-
-		const { data: memberships } = await supabase
-			.from("clinic_members")
-			.select("clinics(name)")
-			.eq("user_id", user.id);
-		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
-			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
-		} else if (user) {
-			allowedClinicsQuery = "?clinics=__none__";
-		}
+	const session = await getAppSession();
+	if (!session) {
+		return null;
 	}
 
-	const fetchOpts = {
-		headers: {
-			"Authorization": `Bearer ${token}`
-		}
-	};
+	const fetchOpts = { headers: backendAuthHeaders(session.token) };
 
-	const { response: resPatients, unreachable: patientsUnreachable } = await fetchBackend(
-		`/api/patients${allowedClinicsQuery}`,
-		fetchOpts,
-	);
+	const [{ response: resPatients, unreachable: patientsUnreachable }, { response: resClinics, unreachable: clinicsUnreachable }] =
+		await Promise.all([
+			fetchBackend(`/api/patients${session.allowedClinicsQuery}`, fetchOpts),
+			fetchBackend(`/api/clinics${session.allowedClinicsQuery}`, fetchOpts),
+		]);
+
 	const patientList: Patient[] = resPatients?.ok ? ((await resPatients.json()) || []) : [];
-
-	const { response: resClinics, unreachable: clinicsUnreachable } = await fetchBackend(
-		`/api/clinics${allowedClinicsQuery}`,
-		fetchOpts,
-	);
 	const clinics: Clinic[] = resClinics?.ok ? ((await resClinics.json()) || []) : [];
 	const backendUnreachable = patientsUnreachable || clinicsUnreachable;
 

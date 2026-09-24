@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/shared/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/shared/components/ui/sidebar";
-import { createClient } from "@/shared/lib/supabase/server";
+import { getAppSession } from "@/shared/lib/auth/app-session";
 import { redirect } from "next/navigation";
 
 export default async function AppLayout({
@@ -8,21 +8,13 @@ export default async function AppLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
+	const session = await getAppSession();
 
-	if (!user) {
+	if (!session) {
 		redirect("/login");
 	}
 
-	let profile = null;
-	const { data } = await supabase
-		.from("profiles")
-		.select("*")
-		.eq("id", user.id)
-		.single();
-	profile = data;
-
+	const { user, profile } = session;
 	const userData = {
 		name: profile?.full_name || user.user_metadata?.full_name || "User",
 		email: user.email!,

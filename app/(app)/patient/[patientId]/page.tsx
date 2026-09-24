@@ -7,9 +7,9 @@ import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
-import { createClient } from "@/shared/lib/supabase/server";
 import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { fetchBackend } from "@/shared/api/client";
+import { backendAuthHeaders, getAppSession } from "@/shared/lib/auth/app-session";
 
 export const revalidate = 0;
 
@@ -19,37 +19,18 @@ export default async function PatientPage({
 	params: Promise<{ patientId: string }>;
 }) {
 	const { patientId } = await params;
-	
-	const supabase = await createClient();
-	const { data: { user } } = await supabase.auth.getUser();
-
-	let allowedClinicsQuery = "";
-	let token = "";
-
-	if (user) {
-		const { data: sessionData } = await supabase.auth.getSession();
-		token = sessionData.session?.access_token || "";
-
-		const { data: memberships } = await supabase
-			.from("clinic_members")
-			.select("clinics(name)")
-			.eq("user_id", user.id);
-		if (memberships && memberships.length > 0) {
-			const names = memberships.map(m => (m.clinics as any).name);
-			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
-		}
+	const session = await getAppSession();
+	if (!session) {
+		return null;
 	}
 
-	const fetchOpts = {
-		headers: {
-			"Authorization": `Bearer ${token}`
-		}
-	};
+	const fetchOpts = { headers: backendAuthHeaders(session.token) };
 
-	const { response: resPatient, unreachable: patientUnreachable } = await fetchBackend(
-		`/api/patient/${patientId}${allowedClinicsQuery}`,
-		fetchOpts,
-	);
+	const [{ response: resPatient, unreachable: patientUnreachable }, { response: resClinics, unreachable: clinicsUnreachable }] =
+		await Promise.all([
+			fetchBackend(`/api/patient/${patientId}${session.allowedClinicsQuery}`, fetchOpts),
+			fetchBackend(`/api/clinics${session.allowedClinicsQuery}`, fetchOpts),
+		]);
 
 	if (patientUnreachable) {
 		return (
@@ -62,12 +43,8 @@ export default async function PatientPage({
 	if (!resPatient?.ok) {
 		return <div className="p-8 text-center">Patient not found</div>;
 	}
-	const patient: Patient = await resPatient.json();
 
-	const { response: resClinics, unreachable: clinicsUnreachable } = await fetchBackend(
-		`/api/clinics${allowedClinicsQuery}`,
-		fetchOpts,
-	);
+	const patient: Patient = await resPatient.json();
 	const clinics: Clinic[] = resClinics?.ok ? await resClinics.json() : [];
 	const backendUnreachable = clinicsUnreachable;
 
