@@ -85,7 +85,7 @@ export default async function PatientPage({
 				<ThemeToggle />
 			</header>
 
-			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+			<div className="mx-auto max-w-7xl space-y-4 px-3 pb-8 pt-4 sm:space-y-6 sm:px-4 sm:pt-6">
 				{backendUnreachable && <BackendConnectionAlert />}
 				<PatientData patient={patient} clinics={clinics} />
 				<SensorData patient={patient} />

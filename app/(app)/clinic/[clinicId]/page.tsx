@@ -141,7 +141,7 @@ export default async function ClinicDetailPage({
 			)}
 			rightHeader={<ThemeToggle />}
 		>
-			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
+			<main className="mx-auto max-w-[1600px] space-y-6 p-3 animate-in fade-in duration-500 sm:space-y-8 sm:p-6 lg:p-8">
 				{backendUnreachable && <BackendConnectionAlert />}
 				<TabsContent value="camera" className="mt-0">
 					<FacilityCameraView clinicName={clinic.name} senderName={senderName} />
@@ -149,7 +149,7 @@ export default async function ClinicDetailPage({
 
 
 				<TabsContent value="patients" className="mt-0">
-					<div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+					<div className="grid grid-cols-1 gap-4 xl:grid-cols-4 xl:gap-6">
 						<div className="xl:col-span-1">
 							<ClinicDetails clinic={clinic} patients={patients} />
 						</div>

@@ -6,6 +6,7 @@ import { AuthField } from "@/modules/auth/components/auth-field";
 import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
 import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
 import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import { useAuthFormSubmit } from "@/modules/auth/hooks/use-auth-form-submit";
 import {
 	ArrowRightIcon,
 	EyeIcon,
@@ -14,29 +15,26 @@ import {
 	MailIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 
 export default function LoginPage() {
 	const [isLogin, setIsLogin] = useState(true);
 	const [role, setRole] = useState("doctor");
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 
-	async function handleSubmit(formData: FormData) {
-		setLoading(true);
-		setError(null);
-		formData.append("role", role);
+	const submitAction = useCallback(
+		async (formData: FormData) => (isLogin ? login(formData) : signup(formData)),
+		[isLogin],
+	);
+	const { loading, error, setError, handleSubmit } = useAuthFormSubmit(submitAction);
 
-		const result = isLogin ? await login(formData) : await signup(formData);
-
-		if (result?.error) {
-			setError(result.error);
-			setLoading(false);
-		}
-	}
+	const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+		handleSubmit(event, (formData) => {
+			formData.append("role", role);
+		});
+	};
 
 	return (
 		<AuthSplitLayout>
@@ -49,7 +47,8 @@ export default function LoginPage() {
 				}
 			/>
 
-			<form action={handleSubmit} className="space-y-5">
+			<form onSubmit={onSubmit} className="space-y-5">
+				<fieldset disabled={loading} className="m-0 min-w-0 space-y-5 border-0 p-0">
 				{!isLogin && (
 					<div className="space-y-5">
 						<div className="space-y-1.5">
@@ -126,10 +125,11 @@ export default function LoginPage() {
 				/>
 
 				{error && <AuthError>{error}</AuthError>}
+				</fieldset>
 
 				<AuthSubmitButton
 					loading={loading}
-					loadingLabel={isLogin ? "Authenticating..." : "Creating account..."}
+					loadingLabel={isLogin ? "Signing you in..." : "Creating your account..."}
 				>
 					{isLogin ? "Log in" : "Sign up"}
 					<ArrowRightIcon className="size-[18px]" />
@@ -141,6 +141,7 @@ export default function LoginPage() {
 					{isLogin ? "Don't have an account? " : "Already have an account? "}
 					<button
 						type="button"
+						disabled={loading}
 						onClick={() => {
 							setIsLogin(!isLogin);
 							setError(null);

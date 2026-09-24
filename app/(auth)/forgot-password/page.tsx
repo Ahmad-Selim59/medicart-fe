@@ -6,28 +6,16 @@ import { AuthField } from "@/modules/auth/components/auth-field";
 import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
 import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
 import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import { useAuthFormSubmit } from "@/modules/auth/hooks/use-auth-form-submit";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircle2Icon, MailIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function ForgotPasswordPage() {
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
-
-	async function handleSubmit(formData: FormData) {
-		setLoading(true);
-		setError(null);
-
-		const result = await forgotPassword(formData);
-
-		if (result?.error) {
-			setError(result.error);
-		} else {
-			setSuccess(true);
-		}
-		setLoading(false);
-	}
+	const { loading, error, handleSubmit } = useAuthFormSubmit(forgotPassword, {
+		onSuccess: () => setSuccess(true),
+	});
 
 	return (
 		<AuthSplitLayout topLink={{ href: "/login", label: "Back to login" }}>
@@ -56,20 +44,22 @@ export default function ForgotPasswordPage() {
 					</Link>
 				</AuthSuccess>
 			) : (
-				<form action={handleSubmit} className="space-y-5">
-					<AuthField
-						id="email"
-						name="email"
-						type="email"
-						label="Email address"
-						icon={MailIcon}
-						placeholder="m@example.com"
-						required
-					/>
+				<form onSubmit={handleSubmit} className="space-y-5">
+					<fieldset disabled={loading} className="m-0 min-w-0 space-y-5 border-0 p-0">
+						<AuthField
+							id="email"
+							name="email"
+							type="email"
+							label="Email address"
+							icon={MailIcon}
+							placeholder="m@example.com"
+							required
+						/>
 
-					{error && <AuthError>{error}</AuthError>}
+						{error && <AuthError>{error}</AuthError>}
+					</fieldset>
 
-					<AuthSubmitButton loading={loading} loadingLabel="Sending...">
+					<AuthSubmitButton loading={loading} loadingLabel="Sending reset link...">
 						Send reset link
 						<ArrowRightIcon className="size-[18px]" />
 					</AuthSubmitButton>

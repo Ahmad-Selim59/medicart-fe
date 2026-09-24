@@ -63,7 +63,7 @@ export default async function PatientListPage() {
 				<ThemeToggle />
 			</header>
 
-			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6 lg:px-8">
+			<div className="mx-auto max-w-7xl space-y-4 px-3 pb-8 pt-4 sm:space-y-6 sm:px-4 sm:pt-6 lg:px-8">
 				{backendUnreachable && <BackendConnectionAlert />}
 				<PatientsTable patients={patientList} clinics={clinics} />
 			</div>

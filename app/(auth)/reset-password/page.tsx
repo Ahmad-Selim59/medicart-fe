@@ -6,6 +6,7 @@ import { AuthField } from "@/modules/auth/components/auth-field";
 import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
 import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
 import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import { useAuthFormSubmit } from "@/modules/auth/hooks/use-auth-form-submit";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -20,35 +21,26 @@ import { useState } from "react";
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirm, setShowConfirm] = useState(false);
 
-	async function handleSubmit(formData: FormData) {
-		setLoading(true);
-		setError(null);
+	const { loading, error, handleSubmit } = useAuthFormSubmit(updatePassword, {
+		validate: (formData) => {
+			const password = formData.get("password") as string;
+			const confirm = formData.get("confirm") as string;
 
-		const password = formData.get("password") as string;
-		const confirm = formData.get("confirm") as string;
+			if (password !== confirm) {
+				return "Passwords do not match";
+			}
 
-		if (password !== confirm) {
-			setError("Passwords do not match");
-			setLoading(false);
-			return;
-		}
-
-		const result = await updatePassword(formData);
-
-		if (result?.error) {
-			setError(result.error);
-		} else {
+			return null;
+		},
+		onSuccess: () => {
 			setSuccess(true);
 			setTimeout(() => router.push("/"), 2000);
-		}
-		setLoading(false);
-	}
+		},
+	});
 
 	return (
 		<AuthSplitLayout topLink={{ href: "/login", label: "Back to login" }}>
@@ -65,52 +57,54 @@ export default function ResetPasswordPage() {
 					</p>
 				</AuthSuccess>
 			) : (
-				<form action={handleSubmit} className="space-y-5">
-					<AuthField
-						id="password"
-						name="password"
-						type={showPassword ? "text" : "password"}
-						label="New password"
-						icon={LockIcon}
-						placeholder="••••••••••••"
-						required
-						minLength={6}
-						trailingAction={
-							<button
-								type="button"
-								onClick={() => setShowPassword(!showPassword)}
-								className="p-1 text-muted-foreground transition-colors hover:text-foreground"
-								aria-label={showPassword ? "Hide password" : "Show password"}
-							>
-								{showPassword ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
-							</button>
-						}
-					/>
+				<form onSubmit={handleSubmit} className="space-y-5">
+					<fieldset disabled={loading} className="m-0 min-w-0 space-y-5 border-0 p-0">
+						<AuthField
+							id="password"
+							name="password"
+							type={showPassword ? "text" : "password"}
+							label="New password"
+							icon={LockIcon}
+							placeholder="••••••••••••"
+							required
+							minLength={6}
+							trailingAction={
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={showPassword ? "Hide password" : "Show password"}
+								>
+									{showPassword ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
+								</button>
+							}
+						/>
 
-					<AuthField
-						id="confirm"
-						name="confirm"
-						type={showConfirm ? "text" : "password"}
-						label="Confirm new password"
-						icon={LockIcon}
-						placeholder="••••••••••••"
-						required
-						minLength={6}
-						trailingAction={
-							<button
-								type="button"
-								onClick={() => setShowConfirm(!showConfirm)}
-								className="p-1 text-muted-foreground transition-colors hover:text-foreground"
-								aria-label={showConfirm ? "Hide password" : "Show password"}
-							>
-								{showConfirm ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
-							</button>
-						}
-					/>
+						<AuthField
+							id="confirm"
+							name="confirm"
+							type={showConfirm ? "text" : "password"}
+							label="Confirm new password"
+							icon={LockIcon}
+							placeholder="••••••••••••"
+							required
+							minLength={6}
+							trailingAction={
+								<button
+									type="button"
+									onClick={() => setShowConfirm(!showConfirm)}
+									className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+									aria-label={showConfirm ? "Hide password" : "Show password"}
+								>
+									{showConfirm ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
+								</button>
+							}
+						/>
 
-					{error && <AuthError>{error}</AuthError>}
+						{error && <AuthError>{error}</AuthError>}
+					</fieldset>
 
-					<AuthSubmitButton loading={loading} loadingLabel="Updating...">
+					<AuthSubmitButton loading={loading} loadingLabel="Updating password...">
 						Update password
 						<ArrowRightIcon className="size-[18px]" />
 					</AuthSubmitButton>

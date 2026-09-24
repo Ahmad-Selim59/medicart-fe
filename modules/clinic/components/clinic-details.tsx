@@ -16,11 +16,11 @@ export function ClinicDetails({ clinic, patients }: { clinic: Clinic; patients: 
 	];
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Clinic Information</CardTitle>
+		<Card className="overflow-hidden">
+			<CardHeader className="px-4 pb-3 sm:px-6">
+				<CardTitle className="text-base sm:text-lg">Clinic Information</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-3">
+			<CardContent className="space-y-3 px-4 pb-5 sm:px-6 sm:pb-6">
 				{details.map(({ icon: Icon, label, value }) => (
 					<div key={label} className="flex items-start gap-3">
 						<Icon className="size-4 text-muted-foreground shrink-0 mt-0.5" />

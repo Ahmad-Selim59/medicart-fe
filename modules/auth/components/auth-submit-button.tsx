@@ -14,12 +14,15 @@ export function AuthSubmitButton({
 		<button
 			type="submit"
 			disabled={loading}
-			className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-accent hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+			aria-busy={loading}
+			aria-disabled={loading}
+			aria-live="polite"
+			className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-accent hover:shadow-lg active:scale-[0.99] disabled:cursor-wait disabled:opacity-80"
 		>
 			{loading ? (
 				<>
-					<Loader2Icon className="size-[18px] animate-spin" />
-					{loadingLabel}
+					<Loader2Icon className="size-[18px] animate-spin" aria-hidden="true" />
+					<span>{loadingLabel}</span>
 				</>
 			) : (
 				children
