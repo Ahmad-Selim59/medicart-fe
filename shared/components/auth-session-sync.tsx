@@ -1,24 +1,37 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/shared/lib/supabase/client";
+
+const PUBLIC_AUTH_PREFIXES = ["/login", "/auth", "/forgot-password", "/reset-password"];
+
+function isPublicAuthPath(pathname: string) {
+	return PUBLIC_AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 export function AuthSessionSync() {
 	const router = useRouter();
+	const pathname = usePathname();
 
 	useEffect(() => {
 		const supabase = createClient();
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange((event) => {
-			if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+			// TOKEN_REFRESHED fires often in dev and was causing unnecessary RSC refetches.
+			if (event === "SIGNED_IN") {
+				router.refresh();
+				return;
+			}
+
+			if (event === "SIGNED_OUT" && !isPublicAuthPath(pathname)) {
 				router.refresh();
 			}
 		});
 
 		return () => subscription.unsubscribe();
-	}, [router]);
+	}, [router, pathname]);
 
 	return null;
 }

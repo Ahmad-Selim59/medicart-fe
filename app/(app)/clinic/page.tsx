@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Clinic } from "@/shared/types/api";
 
 import { Plus } from "lucide-react";
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
@@ -15,7 +16,7 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { AddClinicButton } from "./add-clinic-button";
 import { createClient } from "@/shared/lib/supabase/server";
-import { API_BASE } from "@/shared/api/client";
+import { fetchBackend } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -56,12 +57,12 @@ export default async function ClinicListPage() {
 		}
 	}
 
-	const res = await fetch(`${API_BASE}/api/clinics`, {
+	const { response: res, unreachable: backendUnreachable } = await fetchBackend("/api/clinics", {
 		headers: {
 			"Authorization": `Bearer ${token}`
 		}
 	});
-	let clinicList: Clinic[] = (await res.json()) || [];
+	let clinicList: Clinic[] = res?.ok ? ((await res.json()) || []) : [];
 
 	// Filter clinics to only those the user is a member of
 	if (user) {
@@ -82,6 +83,7 @@ export default async function ClinicListPage() {
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+				{backendUnreachable && <BackendConnectionAlert />}
 				<Card>
 					<CardHeader>
 						<CardTitle>

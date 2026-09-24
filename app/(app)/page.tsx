@@ -2,12 +2,13 @@ import { ClinicDistributionChart } from "@/modules/dashboard/components/clinic-d
 import { PatientStatusDonut } from "@/modules/dashboard/components/patient-status-donut";
 import { StatCards } from "@/modules/dashboard/components/stat-cards";
 
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
-import { API_BASE } from "@/shared/api/client";
+import { fetchBackend } from "@/shared/api/client";
 
 export const revalidate = 0; // Disable static caching
 
@@ -34,17 +35,20 @@ export default async function DashboardPage() {
 		}
 	}
 
-	const res = await fetch(`${API_BASE}/api/dashboard${allowedClinicsQuery}`, {
-		headers: {
-			"Authorization": `Bearer ${token}`
-		}
-	});
-	
-	if (!res.ok) {
+	const { response: res, unreachable: backendUnreachable } = await fetchBackend(
+		`/api/dashboard${allowedClinicsQuery}`,
+		{
+			headers: {
+				"Authorization": `Bearer ${token}`
+			}
+		},
+	);
+
+	if (res && !res.ok) {
 		console.error("Failed to fetch dashboard data:", await res.text());
 	}
-	
-	const data = res.ok ? await res.json() : { quickStats: {} };
+
+	const data = res?.ok ? await res.json() : { quickStats: {} };
 	const {
 		quickStats,
 		patientStatus,
@@ -68,6 +72,7 @@ export default async function DashboardPage() {
 			</header>
 			
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+				{backendUnreachable && <BackendConnectionAlert />}
 				<StatCards
 					totalPatients={quickStats.totalPatients || 0}
 					activeClinics={quickStats.activeClinics || 0}
@@ -83,7 +88,10 @@ export default async function DashboardPage() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					<div className="lg:col-span-2">
-						<ClinicDistributionChart data={clinicDistribution || []} />
+						<ClinicDistributionChart
+							data={clinicDistribution || []}
+							totalPatients={quickStats.totalPatients || 0}
+						/>
 					</div>
 					<PatientStatusDonut data={patientStatus || []} />
 				</div>

@@ -7,12 +7,13 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Patient, Clinic } from "@/shared/types/api";
 
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
-import { API_BASE } from "@/shared/api/client";
+import { fetchBackend } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -47,11 +48,18 @@ export default async function PatientListPage() {
 		}
 	};
 
-	const resPatients = await fetch(`${API_BASE}/api/patients${allowedClinicsQuery}`, fetchOpts);
-	const patientList: Patient[] = resPatients.ok ? ((await resPatients.json()) || []) : [];
+	const { response: resPatients, unreachable: patientsUnreachable } = await fetchBackend(
+		`/api/patients${allowedClinicsQuery}`,
+		fetchOpts,
+	);
+	const patientList: Patient[] = resPatients?.ok ? ((await resPatients.json()) || []) : [];
 
-	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
-	const clinics: Clinic[] = resClinics.ok ? ((await resClinics.json()) || []) : [];
+	const { response: resClinics, unreachable: clinicsUnreachable } = await fetchBackend(
+		`/api/clinics${allowedClinicsQuery}`,
+		fetchOpts,
+	);
+	const clinics: Clinic[] = resClinics?.ok ? ((await resClinics.json()) || []) : [];
+	const backendUnreachable = patientsUnreachable || clinicsUnreachable;
 
 	function getClinicName(clinicId: string) {
 		return clinics.find(c => c.id === clinicId)?.name ?? clinicId;
@@ -70,6 +78,7 @@ export default async function PatientListPage() {
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+				{backendUnreachable && <BackendConnectionAlert />}
 				<Card>
 					<CardHeader>
 						<CardTitle>

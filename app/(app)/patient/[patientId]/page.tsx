@@ -8,7 +8,8 @@ import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
-import { API_BASE } from "@/shared/api/client";
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
+import { fetchBackend } from "@/shared/api/client";
 
 export const revalidate = 0;
 
@@ -45,14 +46,30 @@ export default async function PatientPage({
 		}
 	};
 
-	const resPatient = await fetch(`${API_BASE}/api/patient/${patientId}${allowedClinicsQuery}`, fetchOpts);
-	if (!resPatient.ok) {
+	const { response: resPatient, unreachable: patientUnreachable } = await fetchBackend(
+		`/api/patient/${patientId}${allowedClinicsQuery}`,
+		fetchOpts,
+	);
+
+	if (patientUnreachable) {
+		return (
+			<div className="max-w-3xl mx-auto px-4 py-8">
+				<BackendConnectionAlert />
+			</div>
+		);
+	}
+
+	if (!resPatient?.ok) {
 		return <div className="p-8 text-center">Patient not found</div>;
 	}
 	const patient: Patient = await resPatient.json();
 
-	const resClinics = await fetch(`${API_BASE}/api/clinics${allowedClinicsQuery}`, fetchOpts);
-	const clinics: Clinic[] = resClinics.ok ? await resClinics.json() : [];
+	const { response: resClinics, unreachable: clinicsUnreachable } = await fetchBackend(
+		`/api/clinics${allowedClinicsQuery}`,
+		fetchOpts,
+	);
+	const clinics: Clinic[] = resClinics?.ok ? await resClinics.json() : [];
+	const backendUnreachable = clinicsUnreachable;
 
 	return (
 		<>
@@ -69,6 +86,7 @@ export default async function PatientPage({
 			</header>
 
 			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+				{backendUnreachable && <BackendConnectionAlert />}
 				<PatientData patient={patient} clinics={clinics} />
 				<SensorData patient={patient} />
 				<EcgReadings patient={patient} />

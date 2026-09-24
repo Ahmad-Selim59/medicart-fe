@@ -13,6 +13,27 @@ class ApiError extends Error {
 	}
 }
 
+type FetchBackendResult = {
+	response: Response | null;
+	unreachable: boolean;
+};
+
+/** Server-side fetch to the Go API. `unreachable` is true when the backend cannot be contacted. */
+async function fetchBackend(
+	path: string,
+	options?: RequestInit,
+): Promise<FetchBackendResult> {
+	const base = (API_BASE || "").replace(API_BASE_REGEX, "");
+	const fullUrl = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+
+	try {
+		return { response: await fetch(fullUrl, options), unreachable: false };
+	} catch (error) {
+		console.error(`Backend unreachable at ${fullUrl}:`, error);
+		return { response: null, unreachable: true };
+	}
+}
+
 async function apiRequest<T>(
 	url: string,
 	options?: RequestInit,
@@ -36,4 +57,5 @@ async function apiRequest<T>(
 	return response.json();
 }
 
-export { ApiError, apiRequest, API_BASE };
+export { ApiError, apiRequest, fetchBackend, API_BASE };
+export type { FetchBackendResult };

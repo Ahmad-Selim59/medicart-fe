@@ -13,7 +13,8 @@ import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 
 import { createClient } from "@/shared/lib/supabase/server";
 import { InviteDoctorButton } from "../invite-doctor-button";
-import { API_BASE } from "@/shared/api/client";
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
+import { fetchBackend } from "@/shared/api/client";
 import { TabsContent } from "@/shared/components/ui/tabs";
 import { RemoveDoctorButton } from "../remove-doctor-button";
 import { FacilityCameraView } from "@/modules/clinic/components/facility-camera-view";
@@ -60,13 +61,27 @@ export default async function ClinicDetailPage({
 	let isClinicAdmin = false;
 	let realClinicId = "";
 
+	let backendUnreachable = false;
+
 	try {
-		const resClinic = await fetch(`${API_BASE}/api/clinic/${clinicId}${allowedClinicsQuery}`, {
-			...fetchOpts,
-			cache: 'no-store'
-		});
-		
-		if (!resClinic.ok) {
+		const { response: resClinic, unreachable } = await fetchBackend(
+			`/api/clinic/${clinicId}${allowedClinicsQuery}`,
+			{
+				...fetchOpts,
+				cache: 'no-store'
+			},
+		);
+		backendUnreachable = unreachable;
+
+		if (unreachable) {
+			return (
+				<div className="max-w-3xl mx-auto px-4 py-8">
+					<BackendConnectionAlert />
+				</div>
+			);
+		}
+
+		if (!resClinic?.ok) {
 			return <div className="p-8 text-center text-muted-foreground">Clinic not found or access denied.</div>;
 		}
 		clinic = await resClinic.json();
@@ -96,8 +111,12 @@ export default async function ClinicDetailPage({
 			}
 		}
 
-		const resPatients = await fetch(`${API_BASE}/api/clinic/${clinicId}/patients${allowedClinicsQuery}`, fetchOpts);
-		patients = resPatients.ok ? ((await resPatients.json()) || []) : [];
+		const { response: resPatients, unreachable: patientsUnreachable } = await fetchBackend(
+			`/api/clinic/${clinicId}/patients${allowedClinicsQuery}`,
+			fetchOpts,
+		);
+		backendUnreachable = backendUnreachable || patientsUnreachable;
+		patients = resPatients?.ok ? ((await resPatients.json()) || []) : [];
 	} catch (err) {
 		return <div className="p-8 text-center text-muted-foreground">Unable to load clinic details. Please try again later.</div>;
 	}
@@ -127,6 +146,7 @@ export default async function ClinicDetailPage({
 			rightHeader={<ThemeToggle />}
 		>
 			<main className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
+				{backendUnreachable && <BackendConnectionAlert />}
 				<TabsContent value="camera" className="mt-0">
 					<FacilityCameraView clinicName={clinic.name} senderName={senderName} />
 				</TabsContent>
