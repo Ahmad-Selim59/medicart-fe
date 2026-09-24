@@ -1,19 +1,11 @@
-import { StatusBadge } from "@/shared/components/custom/status-badge";
-import { buttonVariants } from "@/shared/components/ui/button-variants";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
-import { cn } from "@/shared/lib/utils";
-import { Eye } from "lucide-react";
-import Link from "next/link";
-import { Patient, Clinic } from "@/shared/types/api";
-
+import { PatientsTable } from "@/modules/patient/components/patients-table";
 import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
-
-import { createClient } from "@/shared/lib/supabase/server";
 import { fetchBackend } from "@/shared/api/client";
+import { createClient } from "@/shared/lib/supabase/server";
+import type { Clinic, Patient } from "@/shared/types/api";
 
 export const revalidate = 0;
 
@@ -36,8 +28,6 @@ export default async function PatientListPage() {
 			const names = memberships.map(m => (m.clinics as any)?.name).filter(Boolean);
 			allowedClinicsQuery = `?clinics=${encodeURIComponent(names.join(","))}`;
 		} else if (user) {
-			// If user is logged in but has 0 clinics, explicitly ask for 'none' 
-			// to prevent the backend from defaulting to 'show everything'
 			allowedClinicsQuery = "?clinics=__none__";
 		}
 	}
@@ -61,10 +51,6 @@ export default async function PatientListPage() {
 	const clinics: Clinic[] = resClinics?.ok ? ((await resClinics.json()) || []) : [];
 	const backendUnreachable = patientsUnreachable || clinicsUnreachable;
 
-	function getClinicName(clinicId: string) {
-		return clinics.find(c => c.id === clinicId)?.name ?? clinicId;
-	}
-
 	return (
 		<>
 			<header className="sticky top-0 z-10 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-background/80 backdrop-blur border-b">
@@ -77,71 +63,9 @@ export default async function PatientListPage() {
 				<ThemeToggle />
 			</header>
 
-			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6 lg:px-8">
 				{backendUnreachable && <BackendConnectionAlert />}
-				<Card>
-					<CardHeader>
-						<CardTitle>
-							All Patients (
-							{patientList.length}
-							)
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Name</TableHead>
-									<TableHead>Gender</TableHead>
-									<TableHead>Age</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead>Clinic</TableHead>
-									<TableHead>Heart Rate</TableHead>
-									<TableHead>Blood Pressure</TableHead>
-									<TableHead className="text-right">Action</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{patientList.map((patient) => {
-									const latestHr = patient.data?.heartRate?.at(-1);
-									const latestBp = patient.data?.bloodPressure?.at(-1);
-									return (
-										<TableRow
-											key={patient.id}
-											className={patient.status === "critical" ? "border-l-4 border-l-red-400" : ""}
-										>
-											<TableCell className="font-medium">{patient.name}</TableCell>
-											<TableCell>{patient.gender}</TableCell>
-											<TableCell>{patient.age}</TableCell>
-											<TableCell>
-												<StatusBadge status={patient.status} size="sm" />
-											</TableCell>
-											<TableCell className="text-muted-foreground text-sm">{getClinicName(patient.clinicId)}</TableCell>
-											<TableCell className="text-sm tabular-nums">
-												{latestHr?.pr ?? "--"}
-												{" "}
-												bpm
-											</TableCell>
-											<TableCell className="text-sm tabular-nums">
-												{latestBp?.sys ?? "--"}
-												/
-												{latestBp?.dia ?? "--"}
-											</TableCell>
-											<TableCell className="text-right">
-												<Link
-													className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-													href={`/patient/${patient.id}`}
-												>
-													<Eye className="size-4" />
-												</Link>
-											</TableCell>
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<PatientsTable patients={patientList} clinics={clinics} />
 			</div>
 		</>
 	);

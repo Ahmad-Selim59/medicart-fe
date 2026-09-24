@@ -1,24 +1,20 @@
 import { ClinicDetails } from "@/modules/clinic/components/clinic-details";
-import { Clinic, Patient } from "@/shared/types/api";
-import { buttonVariants } from "@/shared/components/ui/button-variants";
-import { StatusBadge } from "@/shared/components/custom/status-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
-import { cn } from "@/shared/lib/utils";
-import { Eye } from "lucide-react";
-import Link from "next/link";
+import { ClinicPatientsTable } from "@/modules/clinic/components/clinic-patients-table";
+import { ClinicPageTabs } from "@/modules/clinic/components/clinic-page-tabs";
+import { FacilityCameraView } from "@/modules/clinic/components/facility-camera-view";
+import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
-
-import { createClient } from "@/shared/lib/supabase/server";
-import { InviteDoctorButton } from "../invite-doctor-button";
-import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
-import { fetchBackend } from "@/shared/api/client";
 import { TabsContent } from "@/shared/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+import { fetchBackend } from "@/shared/api/client";
+import { createClient } from "@/shared/lib/supabase/server";
+import { Clinic, Patient } from "@/shared/types/api";
+
+import { InviteDoctorButton } from "../invite-doctor-button";
 import { RemoveDoctorButton } from "../remove-doctor-button";
-import { FacilityCameraView } from "@/modules/clinic/components/facility-camera-view";
-import { ClinicPageTabs } from "@/modules/clinic/components/clinic-page-tabs";
 
 export const revalidate = 0;
 
@@ -158,52 +154,7 @@ export default async function ClinicDetailPage({
 							<ClinicDetails clinic={clinic} patients={patients} />
 						</div>
 						<div className="xl:col-span-3">
-							<Card>
-								<CardHeader>
-									<CardTitle>Enrolled Patients ({patients.length})</CardTitle>
-								</CardHeader>
-								<CardContent>
-									{patients.length === 0
-										? (
-												<p className="text-muted-foreground text-sm">No patients found for this clinic.</p>
-											)
-										: (
-												<Table>
-													<TableHeader>
-														<TableRow>
-															<TableHead>Name</TableHead>
-															<TableHead>Gender</TableHead>
-															<TableHead>Age</TableHead>
-															<TableHead>Status</TableHead>
-															<TableHead className="text-right">Action</TableHead>
-														</TableRow>
-													</TableHeader>
-													<TableBody>
-														{patients.map((patient) => {
-															return (
-																<TableRow key={patient.id}>
-																	<TableCell className="font-medium">{patient.name}</TableCell>
-																	<TableCell>{patient.gender}</TableCell>
-																	<TableCell>{patient.age}</TableCell>
-																	<TableCell>
-																		<StatusBadge status={patient.status} size="sm" />
-																	</TableCell>
-																	<TableCell className="text-right">
-																		<Link
-																			className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-																			href={`/patient/${patient.id}`}
-																		>
-																			<Eye className="size-4" />
-																		</Link>
-																	</TableCell>
-																</TableRow>
-															);
-														})}
-													</TableBody>
-												</Table>
-											)}
-								</CardContent>
-							</Card>
+							<ClinicPatientsTable patients={patients} />
 						</div>
 					</div>
 				</TabsContent>

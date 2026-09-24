@@ -1,27 +1,17 @@
-import { StatusBadge } from "@/shared/components/custom/status-badge";
-import { buttonVariants } from "@/shared/components/ui/button-variants";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
-import { cn } from "@/shared/lib/utils";
-import { ExternalLink, Eye } from "lucide-react";
-import Link from "next/link";
-import { Clinic } from "@/shared/types/api";
-
-import { Plus } from "lucide-react";
+import { ClinicsTable } from "@/modules/clinic/components/clinics-table";
 import { BackendConnectionAlert } from "@/shared/components/custom/backend-connection-alert";
 import { ThemeToggle } from "@/shared/components/custom/theme-toggle";
-import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
+import { fetchBackend } from "@/shared/api/client";
+import { createClient } from "@/shared/lib/supabase/server";
+import type { Clinic } from "@/shared/types/api";
 
 import { AddClinicButton } from "./add-clinic-button";
-import { createClient } from "@/shared/lib/supabase/server";
-import { fetchBackend } from "@/shared/api/client";
 
 export const revalidate = 0;
 
 export default async function ClinicListPage() {
-	// Fetch user's allowed clinics from Supabase
 	const supabase = await createClient();
 	const { data: { user } } = await supabase.auth.getUser();
 
@@ -37,20 +27,16 @@ export default async function ClinicListPage() {
 			.from("clinic_members")
 			.select("clinics(name)")
 			.eq("user_id", user.id);
-		
+
 		if (memberships) {
 			allowedClinicNames = memberships.map(m => (m.clinics as any).name);
 		}
 
-		// Also fetch user profile to see if they are admin
 		const { data: profile } = await supabase
 			.from("profiles")
 			.select("role")
 			.eq("id", user.id)
 			.single();
-		
-		console.log("User Profile:", profile);
-		console.log("User Metadata Role:", user.user_metadata?.role);
 
 		if (profile?.role === "admin" || user.user_metadata?.role === "admin") {
 			isAdmin = true;
@@ -64,7 +50,6 @@ export default async function ClinicListPage() {
 	});
 	let clinicList: Clinic[] = res?.ok ? ((await res.json()) || []) : [];
 
-	// Filter clinics to only those the user is a member of
 	if (user) {
 		clinicList = clinicList.filter(c => allowedClinicNames.includes(c.name));
 	}
@@ -82,72 +67,9 @@ export default async function ClinicListPage() {
 				{isAdmin && <AddClinicButton />}
 			</header>
 
-			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6">
+			<div className="max-w-7xl mx-auto px-4 pt-6 pb-8 space-y-6 lg:px-8">
 				{backendUnreachable && <BackendConnectionAlert />}
-				<Card>
-					<CardHeader>
-						<CardTitle>
-							All Clinics (
-							{clinicList.length}
-							)
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Clinic Name</TableHead>
-									<TableHead>Location</TableHead>
-									<TableHead>Contact</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead className="text-right">Patients</TableHead>
-									<TableHead className="text-right">Action</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{clinicList.map(clinic => (
-									<TableRow key={clinic.id}>
-										<TableCell className="font-medium">
-											<div className="flex flex-col gap-1">
-												<span>{clinic.name}</span>
-												<a
-													href={`https://${clinic.website}`}
-													target="_blank"
-													rel="noreferrer"
-													className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 w-fit"
-												>
-													{clinic.website}
-													<ExternalLink className="size-3" />
-												</a>
-											</div>
-										</TableCell>
-										<TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-											{clinic.address}
-										</TableCell>
-										<TableCell className="text-sm">
-											<div className="flex flex-col gap-1">
-												<span>{clinic.phone}</span>
-												<span className="text-muted-foreground text-xs">{clinic.email}</span>
-											</div>
-										</TableCell>
-										<TableCell>
-											<StatusBadge status={clinic.status === "active" ? "online" : "offline"} size="sm" />
-										</TableCell>
-										<TableCell className="text-right tabular-nums">{clinic.patientCount}</TableCell>
-										<TableCell className="text-right">
-											<Link
-												className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-												href={`/clinic/${clinic.id}`}
-											>
-												<Eye className="size-4" />
-											</Link>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<ClinicsTable clinics={clinicList} />
 			</div>
 		</>
 	);
