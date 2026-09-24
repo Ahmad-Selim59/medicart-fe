@@ -39,9 +39,18 @@ export async function updateSession(request: NextRequest) {
 		path.startsWith("/forgot-password") ||
 		path.startsWith("/reset-password");
 
+	const isGuestAuthRoute =
+		path.startsWith("/login") || path.startsWith("/forgot-password");
+
 	if (!user && !isPublicRoute) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/login";
+		return NextResponse.redirect(url);
+	}
+
+	if (user && isGuestAuthRoute) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/";
 		return NextResponse.redirect(url);
 	}
 

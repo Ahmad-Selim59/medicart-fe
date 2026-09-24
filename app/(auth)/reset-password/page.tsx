@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import { updatePassword } from "@/app/login/actions";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { HospitalIcon, EyeIcon, EyeOffIcon, CheckCircleIcon } from "lucide-react";
+import { AuthError, AuthSuccess } from "@/modules/auth/components/auth-message";
+import { AuthField } from "@/modules/auth/components/auth-field";
+import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
+import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
+import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import {
+	ArrowLeftIcon,
+	ArrowRightIcon,
+	CheckCircle2Icon,
+	EyeIcon,
+	EyeOffIcon,
+	LockIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function ResetPasswordPage() {
 	const router = useRouter();
@@ -42,102 +51,83 @@ export default function ResetPasswordPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="space-y-2 text-center">
-					<div className="flex justify-center mb-2">
-						<div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-							<HospitalIcon className="size-6" />
-						</div>
-					</div>
-					<CardTitle className="text-2xl font-bold tracking-tight">
-						Set new password
-					</CardTitle>
-					<CardDescription>
-						{success ? "Password updated successfully" : "Choose a strong new password"}
-					</CardDescription>
-				</CardHeader>
+		<AuthSplitLayout topLink={{ href: "/login", label: "Back to login" }}>
+			<AuthFormHeader
+				title="Set new password"
+				description={success ? "Password updated successfully" : "Choose a strong new password"}
+			/>
 
-				<CardContent>
-					{success ? (
-						<div className="flex flex-col items-center gap-3 py-4 text-center">
-							<CheckCircleIcon className="size-12 text-emerald-500" />
-							<p className="text-sm text-muted-foreground">
-								Your password has been updated. Redirecting you now...
-							</p>
-						</div>
-					) : (
-						<form action={handleSubmit} className="space-y-4">
-							<div className="space-y-2">
-								<label htmlFor="password" className="text-sm font-medium leading-none">
-									New password
-								</label>
-								<div className="relative">
-									<Input
-										id="password"
-										name="password"
-										type={showPassword ? "text" : "password"}
-										required
-										minLength={6}
-										className="pr-10"
-									/>
-									<button
-										type="button"
-										onClick={() => setShowPassword(!showPassword)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-										aria-label={showPassword ? "Hide password" : "Show password"}
-									>
-										{showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-									</button>
-								</div>
-							</div>
+			{success ? (
+				<AuthSuccess>
+					<CheckCircle2Icon className="size-12 text-primary" />
+					<p className="text-sm text-muted-foreground">
+						Your password has been updated. Redirecting you now...
+					</p>
+				</AuthSuccess>
+			) : (
+				<form action={handleSubmit} className="space-y-5">
+					<AuthField
+						id="password"
+						name="password"
+						type={showPassword ? "text" : "password"}
+						label="New password"
+						icon={LockIcon}
+						placeholder="••••••••••••"
+						required
+						minLength={6}
+						trailingAction={
+							<button
+								type="button"
+								onClick={() => setShowPassword(!showPassword)}
+								className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+								aria-label={showPassword ? "Hide password" : "Show password"}
+							>
+								{showPassword ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
+							</button>
+						}
+					/>
 
-							<div className="space-y-2">
-								<label htmlFor="confirm" className="text-sm font-medium leading-none">
-									Confirm new password
-								</label>
-								<div className="relative">
-									<Input
-										id="confirm"
-										name="confirm"
-										type={showConfirm ? "text" : "password"}
-										required
-										minLength={6}
-										className="pr-10"
-									/>
-									<button
-										type="button"
-										onClick={() => setShowConfirm(!showConfirm)}
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-										aria-label={showConfirm ? "Hide password" : "Show password"}
-									>
-										{showConfirm ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-									</button>
-								</div>
-							</div>
+					<AuthField
+						id="confirm"
+						name="confirm"
+						type={showConfirm ? "text" : "password"}
+						label="Confirm new password"
+						icon={LockIcon}
+						placeholder="••••••••••••"
+						required
+						minLength={6}
+						trailingAction={
+							<button
+								type="button"
+								onClick={() => setShowConfirm(!showConfirm)}
+								className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+								aria-label={showConfirm ? "Hide password" : "Show password"}
+							>
+								{showConfirm ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
+							</button>
+						}
+					/>
 
-							{error && (
-								<div className="text-sm font-medium text-red-500">
-									{error}
-								</div>
-							)}
+					{error && <AuthError>{error}</AuthError>}
 
-							<Button type="submit" className="w-full" disabled={loading}>
-								{loading ? "Updating..." : "Update password"}
-							</Button>
-						</form>
-					)}
-				</CardContent>
+					<AuthSubmitButton loading={loading} loadingLabel="Updating...">
+						Update password
+						<ArrowRightIcon className="size-[18px]" />
+					</AuthSubmitButton>
+				</form>
+			)}
 
-				<CardFooter className="flex justify-center border-t p-4">
+			{!success && (
+				<div className="mt-8 text-center">
 					<Link
 						href="/login"
-						className="text-sm text-muted-foreground hover:text-primary transition-colors"
+						className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
 					>
+						<ArrowLeftIcon className="size-4" />
 						Back to login
 					</Link>
-				</CardFooter>
-			</Card>
-		</div>
+				</div>
+			)}
+		</AuthSplitLayout>
 	);
 }

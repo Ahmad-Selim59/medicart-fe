@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { forgotPassword } from "@/app/login/actions";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { HospitalIcon, ArrowLeftIcon, CheckCircleIcon } from "lucide-react";
+import { AuthError, AuthSuccess } from "@/modules/auth/components/auth-message";
+import { AuthField } from "@/modules/auth/components/auth-field";
+import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
+import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
+import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircle2Icon, MailIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function ForgotPasswordPage() {
 	const [loading, setLoading] = useState(false);
@@ -28,70 +30,63 @@ export default function ForgotPasswordPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="space-y-2 text-center">
-					<div className="flex justify-center mb-2">
-						<div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-							<HospitalIcon className="size-6" />
-						</div>
-					</div>
-					<CardTitle className="text-2xl font-bold tracking-tight">
-						Reset your password
-					</CardTitle>
-					<CardDescription>
-						{success
-							? "Check your inbox for a reset link"
-							: "Enter your email and we'll send you a reset link"}
-					</CardDescription>
-				</CardHeader>
+		<AuthSplitLayout topLink={{ href: "/login", label: "Back to login" }}>
+			<AuthFormHeader
+				title="Reset your password"
+				description={
+					success
+						? "Check your inbox for a reset link"
+						: "Enter your email and we'll send you a reset link"
+				}
+			/>
 
-				<CardContent>
-					{success ? (
-						<div className="flex flex-col items-center gap-3 py-4 text-center">
-							<CheckCircleIcon className="size-12 text-emerald-500" />
-							<p className="text-sm text-muted-foreground">
-								We've sent a password reset link to your email. Please check your inbox (and spam folder).
-							</p>
-						</div>
-					) : (
-						<form action={handleSubmit} className="space-y-4">
-							<div className="space-y-2">
-								<label htmlFor="email" className="text-sm font-medium leading-none">
-									Email address
-								</label>
-								<Input
-									id="email"
-									name="email"
-									type="email"
-									placeholder="m@example.com"
-									required
-								/>
-							</div>
-
-							{error && (
-								<div className="text-sm font-medium text-red-500">
-									{error}
-								</div>
-							)}
-
-							<Button type="submit" className="w-full" disabled={loading}>
-								{loading ? "Sending..." : "Send reset link"}
-							</Button>
-						</form>
-					)}
-				</CardContent>
-
-				<CardFooter className="flex justify-center border-t p-4">
+			{success ? (
+				<AuthSuccess>
+					<CheckCircle2Icon className="size-12 text-primary" />
+					<p className="text-sm text-muted-foreground">
+						We&apos;ve sent a password reset link to your email. Please check your inbox
+						(and spam folder).
+					</p>
 					<Link
 						href="/login"
-						className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+						className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-accent"
 					>
-						<ArrowLeftIcon className="size-3.5" />
+						<ArrowLeftIcon className="size-4" />
 						Back to login
 					</Link>
-				</CardFooter>
-			</Card>
-		</div>
+				</AuthSuccess>
+			) : (
+				<form action={handleSubmit} className="space-y-5">
+					<AuthField
+						id="email"
+						name="email"
+						type="email"
+						label="Email address"
+						icon={MailIcon}
+						placeholder="m@example.com"
+						required
+					/>
+
+					{error && <AuthError>{error}</AuthError>}
+
+					<AuthSubmitButton loading={loading} loadingLabel="Sending...">
+						Send reset link
+						<ArrowRightIcon className="size-[18px]" />
+					</AuthSubmitButton>
+				</form>
+			)}
+
+			{!success && (
+				<div className="mt-8 text-center">
+					<Link
+						href="/login"
+						className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+					>
+						<ArrowLeftIcon className="size-4" />
+						Back to login
+					</Link>
+				</div>
+			)}
+		</AuthSplitLayout>
 	);
 }

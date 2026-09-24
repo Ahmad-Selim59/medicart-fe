@@ -1,12 +1,20 @@
 "use client";
 
 import { login, signup } from "@/app/login/actions";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Input } from "@/shared/components/ui/input";
-import { HospitalIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import { useState } from "react";
+import { AuthError } from "@/modules/auth/components/auth-message";
+import { AuthField } from "@/modules/auth/components/auth-field";
+import { AuthFormHeader } from "@/modules/auth/components/auth-form-header";
+import { AuthSplitLayout } from "@/modules/auth/components/auth-split-layout";
+import { AuthSubmitButton } from "@/modules/auth/components/auth-submit-button";
+import {
+	ArrowRightIcon,
+	EyeIcon,
+	EyeOffIcon,
+	LockIcon,
+	MailIcon,
+} from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 
@@ -20,16 +28,9 @@ export default function LoginPage() {
 	async function handleSubmit(formData: FormData) {
 		setLoading(true);
 		setError(null);
-
-		// Append role to formData
 		formData.append("role", role);
 
-		let result;
-		if (isLogin) {
-			result = await login(formData);
-		} else {
-			result = await signup(formData);
-		}
+		const result = isLogin ? await login(formData) : await signup(formData);
 
 		if (result?.error) {
 			setError(result.error);
@@ -38,134 +39,119 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="space-y-2 text-center">
-					<div className="flex justify-center mb-2">
-						<div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-							<HospitalIcon className="size-6" />
-						</div>
-					</div>
-					<CardTitle className="text-2xl font-bold tracking-tight">
-						{isLogin ? "Welcome back" : "Create an account"}
-					</CardTitle>
-					<CardDescription>
-						{isLogin
-							? "Enter your email below to log into your account"
-							: "Choose your role and enter your details to get started"}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form action={handleSubmit} className="space-y-4">
-						{!isLogin && (
-							<div className="space-y-4">
-								<div className="space-y-2">
-									<label className="text-sm font-medium leading-none">
-										I am a...
-									</label>
-									<Tabs value={role} onValueChange={setRole} className="w-full">
-										<TabsList className="w-full grid grid-cols-2">
-											<TabsTrigger value="doctor">Doctor</TabsTrigger>
-											<TabsTrigger value="admin">Clinic Admin</TabsTrigger>
-										</TabsList>
-									</Tabs>
-								</div>
-								<div className="space-y-2">
-									<label htmlFor="fullName" className="text-sm font-medium leading-none">
-										Full Name
-									</label>
-									<Input
-										id="fullName"
-										name="fullName"
-										placeholder={role === "doctor" ? "Dr. John Doe" : "Clinic Admin"}
-										required={!isLogin}
-									/>
-								</div>
-							</div>
-						)}
-						<div className="space-y-2">
-							<label htmlFor="email" className="text-sm font-medium leading-none">
-								Email
+		<AuthSplitLayout>
+			<AuthFormHeader
+				title={isLogin ? "Welcome back" : "Create an account"}
+				description={
+					isLogin
+						? "Enter your email below to log into your account"
+						: "Choose your role and enter your details to get started"
+				}
+			/>
+
+			<form action={handleSubmit} className="space-y-5">
+				{!isLogin && (
+					<div className="space-y-5">
+						<div className="space-y-1.5">
+							<label className="block text-sm font-semibold text-foreground">
+								I am a...
 							</label>
-							<Input
-								id="email"
-								name="email"
-								type="email"
-								placeholder="m@example.com"
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<label htmlFor="password" className="text-sm font-medium leading-none">
-									Password
-								</label>
-								{isLogin && (
-									<Link
-										href="/forgot-password"
-										className="text-xs text-muted-foreground hover:text-primary transition-colors"
+							<Tabs value={role} onValueChange={setRole} className="w-full">
+								<TabsList className="grid h-11 w-full grid-cols-2 rounded-lg bg-secondary p-1">
+									<TabsTrigger
+										value="doctor"
+										className="rounded-md data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
 									>
-										Forgot password?
-									</Link>
-								)}
-							</div>
-							<div className="relative">
-								<Input
-									id="password"
-									name="password"
-									type={showPassword ? "text" : "password"}
-									required
-									minLength={6}
-									className="pr-10"
-								/>
-								<button
-									type="button"
-									onClick={() => setShowPassword(!showPassword)}
-									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-									aria-label={showPassword ? "Hide password" : "Show password"}
-								>
-									{showPassword ? (
-										<EyeOffIcon className="size-4" />
-									) : (
-										<EyeIcon className="size-4" />
-									)}
-								</button>
-							</div>
+										Doctor
+									</TabsTrigger>
+									<TabsTrigger
+										value="admin"
+										className="rounded-md data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
+									>
+										Clinic Admin
+									</TabsTrigger>
+								</TabsList>
+							</Tabs>
 						</div>
 
-						{error && (
-							<div className="text-sm font-medium text-destructive text-red-500">
-								{error}
-							</div>
-						)}
+						<AuthField
+							id="fullName"
+							name="fullName"
+							label="Full Name"
+							placeholder={role === "doctor" ? "Dr. John Doe" : "Clinic Admin"}
+							required={!isLogin}
+						/>
+					</div>
+				)}
 
-						<Button type="submit" className="w-full" disabled={loading}>
-							{loading
-								? "Please wait..."
-								: isLogin
-									? "Log in"
-									: "Sign up"
-							}
-						</Button>
-					</form>
-				</CardContent>
-				<CardFooter className="flex justify-center border-t p-4">
-					<p className="text-sm text-muted-foreground text-center">
-						{isLogin ? "Don't have an account? " : "Already have an account? "}
+				<AuthField
+					id="email"
+					name="email"
+					type="email"
+					label="Email"
+					icon={MailIcon}
+					placeholder="m@example.com"
+					required
+				/>
+
+				<AuthField
+					id="password"
+					name="password"
+					type={showPassword ? "text" : "password"}
+					label="Password"
+					icon={LockIcon}
+					placeholder="••••••••••••"
+					required
+					minLength={6}
+					footer={
+						isLogin ? (
+							<Link
+								href="/forgot-password"
+								className="text-sm font-medium text-primary transition-colors hover:text-accent"
+							>
+								Forgot password?
+							</Link>
+						) : undefined
+					}
+					trailingAction={
 						<button
 							type="button"
-							onClick={() => {
-								setIsLogin(!isLogin);
-								setError(null);
-								setShowPassword(false);
-							}}
-							className="text-primary hover:underline font-medium"
+							onClick={() => setShowPassword(!showPassword)}
+							className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+							aria-label={showPassword ? "Hide password" : "Show password"}
 						>
-							{isLogin ? "Sign up" : "Log in"}
+							{showPassword ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
 						</button>
-					</p>
-				</CardFooter>
-			</Card>
-		</div>
+					}
+				/>
+
+				{error && <AuthError>{error}</AuthError>}
+
+				<AuthSubmitButton
+					loading={loading}
+					loadingLabel={isLogin ? "Authenticating..." : "Creating account..."}
+				>
+					{isLogin ? "Log in" : "Sign up"}
+					<ArrowRightIcon className="size-[18px]" />
+				</AuthSubmitButton>
+			</form>
+
+			<div className="mt-8 text-center">
+				<p className="text-sm text-muted-foreground">
+					{isLogin ? "Don't have an account? " : "Already have an account? "}
+					<button
+						type="button"
+						onClick={() => {
+							setIsLogin(!isLogin);
+							setError(null);
+							setShowPassword(false);
+						}}
+						className="ml-1 font-semibold text-primary transition-colors hover:text-accent"
+					>
+						{isLogin ? "Sign up" : "Log in"}
+					</button>
+				</p>
+			</div>
+		</AuthSplitLayout>
 	);
 }
