@@ -47,8 +47,8 @@ export default function LoginPage() {
 				}
 			/>
 
-			<form onSubmit={onSubmit} className="space-y-5">
-				<fieldset disabled={loading} className="m-0 min-w-0 space-y-5 border-0 p-0">
+			<form onSubmit={onSubmit} className="flex flex-col gap-5">
+				<fieldset disabled={loading} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
 				{!isLogin && (
 					<div className="space-y-5">
 						<div className="space-y-1.5">

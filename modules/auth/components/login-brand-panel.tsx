@@ -2,7 +2,7 @@ import { AuthPartnerLogos } from "@/modules/auth/components/auth-partner-logos";
 
 export function LoginBrandPanel() {
 	return (
-		<div className="relative flex w-full flex-col justify-between overflow-hidden bg-gradient-to-b from-auth-brand-from via-auth-brand-via to-auth-brand-to p-8 text-white lg:w-[44%] lg:p-14">
+		<div className="relative hidden w-full flex-col justify-between overflow-hidden bg-gradient-to-b from-auth-brand-from via-auth-brand-via to-auth-brand-to p-8 text-white lg:flex lg:w-[44%] lg:p-14">
 			<div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-auth-accent-dim/15 blur-3xl" />
 			<div className="pointer-events-none absolute top-1/2 -right-24 size-80 rounded-full bg-auth-accent-soft/10 blur-3xl" />
 			<div className="pointer-events-none absolute -bottom-24 left-1/4 size-72 rounded-full bg-auth-accent/15 blur-3xl" />
