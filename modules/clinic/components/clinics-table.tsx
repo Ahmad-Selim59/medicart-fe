@@ -8,8 +8,11 @@ import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { DeleteClinicButton } from "@/modules/clinic/components/delete-clinic-button";
+
 interface ClinicsTableProps {
 	clinics: Clinic[];
+	canDelete?: boolean;
 }
 
 function clinicWebsiteUrl(website: string) {
@@ -34,7 +37,7 @@ function ClinicRowLink({ href, className }: { href: string; className?: string }
 	);
 }
 
-export function ClinicsTable({ clinics }: ClinicsTableProps) {
+export function ClinicsTable({ clinics, canDelete = false }: ClinicsTableProps) {
 	const [query, setQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 
@@ -170,7 +173,10 @@ export function ClinicsTable({ clinics }: ClinicsTableProps) {
 										) : null}
 									</dl>
 
-									<ClinicRowLink href={href} className="mt-3 w-full" />
+									<div className={cn("mt-3 flex gap-2", canDelete ? "items-center" : "")}>
+										<ClinicRowLink href={href} className={canDelete ? "flex-1" : "w-full"} />
+										{canDelete ? <DeleteClinicButton clinicName={clinic.name} /> : null}
+									</div>
 								</article>
 							);
 						})}
@@ -252,7 +258,10 @@ export function ClinicsTable({ clinics }: ClinicsTableProps) {
 												{clinic.patientCount}
 											</td>
 											<td className="px-6 py-4 text-right whitespace-nowrap">
-												<ClinicRowLink href={href} />
+												<div className="inline-flex items-center justify-end gap-1">
+													<ClinicRowLink href={href} />
+													{canDelete ? <DeleteClinicButton clinicName={clinic.name} /> : null}
+												</div>
 											</td>
 										</tr>
 									);

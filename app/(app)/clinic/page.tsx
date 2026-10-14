@@ -42,7 +42,7 @@ export default async function ClinicListPage() {
 
 			<div className="mx-auto max-w-7xl space-y-4 px-3 pb-8 pt-4 sm:space-y-6 sm:px-4 sm:pt-6 lg:px-8">
 				{backendUnreachable && <BackendConnectionAlert />}
-				<ClinicsTable clinics={clinicList} />
+				<ClinicsTable clinics={clinicList} canDelete={session.isAdmin} />
 			</div>
 		</>
 	);
